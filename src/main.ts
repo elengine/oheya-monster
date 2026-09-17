@@ -40,7 +40,6 @@ function makeField(): GameField {
     onCatch: () => refreshCount(),
   });
   field = f;
-  field.makeReticle();
   // QA用デバッグフック（CDP検証でモンスター座標投影/直接操作に使用）
   (window as unknown as { __oheya?: { field: GameField; project: (i: number) => { x: number; y: number } | null } }).__oheya = {
     field: f,
