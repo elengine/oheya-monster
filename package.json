@@ -1,0 +1,21 @@
+{
+  "name": "oheya-monster",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "おへやモンスター - iPadカメラで床・テーブルを認識してモンスターを捕まえるARゲーム (WebXR)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.170.0",
+    "@types/webxr": "^0.5.20",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0"
+  }
+}

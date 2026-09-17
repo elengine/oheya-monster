@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>おへやモンスター</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0b1020;
+      font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif; color: #dfe7ff; }
+    #app { position: fixed; inset: 0; }
+    #app canvas { display: block; width: 100%; height: 100%; }
+    .veil { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center; gap: 18px; background: #0b1020; z-index: 20; padding: 24px; }
+    .veil h1 { font-size: 40px; margin: 0; letter-spacing: 2px; }
+    .veil .title-en { font-size: 13px; opacity: .55; letter-spacing: 4px; text-transform: uppercase; }
+    .veil .ver { font-size: 12px; opacity: .5; margin-top: -8px; }
+    .veil .desc { font-size: 14px; opacity: .8; line-height: 1.7; max-width: 420px; }
+    .big-btn { font-size: 20px; font-weight: 700; color: #0b1020; background: linear-gradient(135deg,#7cf0ff,#4f8bff);
+      border: none; border-radius: 999px; padding: 16px 44px; box-shadow: 0 6px 24px rgba(79,139,255,.45); }
+    .note { font-size: 12px; opacity: .6; }
+    .hud { position: fixed; inset: 0; padding: calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 10px);
+      display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; z-index: 10; }
+    .hud .top, .hud .bottom { display: flex; justify-content: space-between; align-items: center; }
+    .hud .chip { pointer-events: auto; background: rgba(11,16,32,.55); border: 1px solid rgba(124,240,255,.35);
+      border-radius: 14px; padding: 8px 14px; font-size: 14px; backdrop-filter: blur(6px); }
+    .hud .icon-btn { pointer-events: auto; background: rgba(11,16,32,.55); border: 1px solid rgba(124,240,255,.35);
+      border-radius: 50%; width: 44px; height: 44px; color: #dfe7ff; font-size: 18px; }
+    .status-tip { pointer-events: none; text-align: center; font-size: 14px; background: rgba(11,16,32,.55);
+      border: 1px solid rgba(124,240,255,.35); border-radius: 999px; padding: 8px 18px; backdrop-filter: blur(6px); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- タイトル/スタート オーバーレイ -->
+  <div id="title" class="veil">
+    <div class="title-en">Oheya Monster</div>
+    <h1>おへやモンスター</h1>
+    <div class="ver" id="ver"></div>
+    <div class="desc">
+      iPadのカメラで<br>床やテーブルを写すと<br>モンスターが現れるよ。
+    </div>
+    <button id="start-ar" class="big-btn">ARをはじめる</button>
+    <button id="start-sim" class="big-btn" style="background:linear-gradient(135deg,#5a6b8c,#39435e)">デモ（PC用）</button>
+    <div class="note">※iPad火/最新Safari推奨。カメラの許可を求めるダイアログが出ます。</div>
+  </div>
+
+  <!-- AR/遊戯中 HUD -->
+  <div id="hud" class="hud hidden">
+    <div class="top">
+      <div class="chip" id="catch-counter">つかまえた: 0</div>
+      <button id="sound-btn" class="icon-btn">♪</button>
+    </div>
+    <div class="status-tip" id="status-tip">まわりを映して ゆかにモンスターをさがそう</div>
+    <div class="bottom">
+      <button id="dex-btn" class="icon-btn">図</button>
+      <button id="exit-btn" class="icon-btn">✕</button>
+    </div>
+  </div>
+
+  <!-- 図鑑オーバーレイ -->
+  <div id="dex" class="veil hidden">
+    <h1 style="font-size:28px">ずかん</h1>
+    <div id="dex-list" style="max-height:50vh;overflow-y:auto;width:100%;max-width:420px"></div>
+    <button id="dex-close" class="big-btn" style="font-size:16px">とじる</button>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
