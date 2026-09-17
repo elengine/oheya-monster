@@ -24,8 +24,8 @@ export async function startAR(field: GameField, onEnd: () => void): Promise<ArHa
 
   const hud = document.getElementById('hud')!;
   const session = await xr.requestSession('immersive-ar', {
-    requiredFeatures: ['hit-test', 'plane-detection'],
-    optionalFeatures: ['dom-overlay'],
+    requiredFeatures: ['hit-test'],
+    optionalFeatures: ['plane-detection', 'dom-overlay'],
     domOverlay: { root: hud },
   });
 

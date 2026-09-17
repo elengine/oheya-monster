@@ -21,6 +21,9 @@
     .veil .desc { font-size: 14px; opacity: .8; line-height: 1.7; max-width: 420px; }
     .big-btn { font-size: 20px; font-weight: 700; color: #0b1020; background: linear-gradient(135deg,#7cf0ff,#4f8bff);
       border: none; border-radius: 999px; padding: 16px 44px; box-shadow: 0 6px 24px rgba(79,139,255,.45); }
+    .big-btn.secondary { background: linear-gradient(135deg,#5a6b8c,#39435e); }
+    .ar-err { font-size: 13px; color: #ffb3b3; background: rgba(214,58,30,.18); border: 1px solid rgba(255,120,100,.4);
+      border-radius: 12px; padding: 10px 16px; max-width: 420px; line-height: 1.6; white-space: pre-line; }
     .note { font-size: 12px; opacity: .6; }
     .hud { position: fixed; inset: 0; padding: calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 10px);
       display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; z-index: 10; }
@@ -46,8 +49,9 @@
       iPadのカメラで<br>床やテーブルを写すと<br>モンスターが現れるよ。
     </div>
     <button id="start-ar" class="big-btn">ARをはじめる</button>
-    <button id="start-sim" class="big-btn" style="background:linear-gradient(135deg,#5a6b8c,#39435e)">デモ（PC用）</button>
-    <div class="note">※iPad火/最新Safari推奨。カメラの許可を求めるダイアログが出ます。</div>
+    <button id="start-sim" class="big-btn secondary">デモ（PC用）</button>
+    <div id="ar-error" class="ar-err hidden"></div>
+    <div class="note">※iPad/最新Safari推奨。カメラの許可を求めるダイアログが出ます。</div>
   </div>
 
   <!-- AR/遊戯中 HUD -->

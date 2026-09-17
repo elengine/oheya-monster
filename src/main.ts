@@ -72,16 +72,37 @@ async function onStartAR(): Promise<void> {
   unlock();
   sfx('tap');
   const f = makeField();
-  if (!(await arSupported())) {
-    statusTip.textContent = 'この端末ではARが使えません。デモ（PC用）でお試しください';
-    return;
+  showArError('');
+  try {
+    const supported = await arSupported();
+    console.log('[oheya] arSupported:', supported);
+    if (!supported) {
+      showArError('この端末ではAR（WebXR）が使えません。\nSafari/最新OSで開き直すか、デモ（PC用）をご利用ください。');
+      return;
+    }
+    title.classList.add('hidden');
+    hud.classList.remove('hidden');
+    startBGM();
+    const handle = await startAR(f, () => showTitle());
+    if (!handle) {
+      showTitle();
+      showArError('ARを開始できませんでした。\nSafariのカメラ許可を確認して再試行してください。');
+    } else {
+      arSessionEnd = handle.end;
+    }
+  } catch (e) {
+    showTitle();
+    const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    console.error('[oheya] AR start error:', e);
+    showArError(`AR開始エラー（原因をルビーへ送ってください）\n${msg}`);
   }
-  title.classList.add('hidden');
-  hud.classList.remove('hidden');
-  startBGM();
-  const handle = await startAR(f, () => { showTitle(); });
-  if (handle) { arSessionEnd = handle.end; }
-  else { showTitle(); }
+}
+
+function showArError(msg: string): void {
+  const el = $('ar-error');
+  if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
+  el.textContent = msg;
+  el.classList.remove('hidden');
 }
 
 function onStartSim(): void {
