@@ -3,4 +3,5 @@ dist/
 .cdp/
 .cdp-shot.png
 *.log
+*.tsbuildinfo
 .DS_Store
