@@ -2,7 +2,7 @@
 
 import { GameField } from './game';
 import * as THREE from 'three';
-import { startAR, arSupported } from './ar';
+import { startCamAR } from './camAR';
 import { startSim } from './sim';
 import { SPECIES } from './models';
 import { unlock, sfx, isMuted, setMuted, startBGM, stopBGM } from './audio';
@@ -19,11 +19,11 @@ const catchCounter = $('catch-counter');
 const soundBtn = $<HTMLButtonElement>('sound-btn');
 const dexList = $('dex-list');
 const app = $('app');
+const camVideo = $<HTMLVideoElement>('cam');
 
 let field: GameField | null = null;
-let cancelAR: (() => void) | null = null;
+let cancelCam: (() => void) | null = null;
 let cancelSim: (() => void) | null = null;
-let arSessionEnd: (() => void) | null = null;
 
 function refreshCount(): void {
   catchCounter.textContent = `つかまえた: ${totalCount()}`;
@@ -68,37 +68,25 @@ function showTitle(): void {
   dex.classList.add('hidden');
 }
 
-async function onStartAR(): Promise<void> {
+async function onStartCam(): Promise<void> {
   unlock();
   sfx('tap');
   const f = makeField();
-  showArError('');
+  showError('');
   try {
-    const supported = await arSupported();
-    console.log('[oheya] arSupported:', supported);
-    if (!supported) {
-      showArError('この端末ではAR（WebXR）が使えません。\nSafari/最新OSで開き直すか、デモ（PC用）をご利用ください。');
-      return;
-    }
     title.classList.add('hidden');
     hud.classList.remove('hidden');
     startBGM();
-    const handle = await startAR(f, () => showTitle());
-    if (!handle) {
-      showTitle();
-      showArError('ARを開始できませんでした。\nSafariのカメラ許可を確認して再試行してください。');
-    } else {
-      arSessionEnd = handle.end;
-    }
+    cancelCam = await startCamAR(f, camVideo, () => showTitle());
   } catch (e) {
     showTitle();
     const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    console.error('[oheya] AR start error:', e);
-    showArError(`AR開始エラー（原因をルビーへ送ってください）\n${msg}`);
+    console.error('[oheya] cam start error:', e);
+    showError(`カメラを起動できませんでした（カメラ許可を確認して再試行）\n${msg}`);
   }
 }
 
-function showArError(msg: string): void {
+function showError(msg: string): void {
   const el = $('ar-error');
   if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
   el.textContent = msg;
@@ -118,8 +106,7 @@ function onStartSim(): void {
 function exitGame(): void {
   sfx('tap');
   if (cancelSim) { cancelSim(); cancelSim = null; }
-  if (cancelAR) { cancelAR(); cancelAR = null; }
-  if (arSessionEnd) { void arSessionEnd(); arSessionEnd = null; }
+  if (cancelCam) { cancelCam(); cancelCam = null; }
   showTitle();
   refreshCount();
 }
@@ -151,7 +138,7 @@ function wire(): void {
   refreshCount();
   refreshSoundBtn();
 
-  $<HTMLButtonElement>('start-ar').addEventListener('click', () => { void onStartAR(); });
+  $<HTMLButtonElement>('start-ar').addEventListener('click', () => { void onStartCam(); });
   $<HTMLButtonElement>('start-sim').addEventListener('click', onStartSim);
   $<HTMLButtonElement>('exit-btn').addEventListener('click', exitGame);
   soundBtn.addEventListener('click', () => { setMuted(!isMuted()); refreshSoundBtn(); sfx('tap'); });

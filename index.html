@@ -11,8 +11,9 @@
   <style>
     html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0b1020;
       font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif; color: #dfe7ff; }
-    #app { position: fixed; inset: 0; }
+    #app { position: fixed; inset: 0; z-index: 1; }
     #app canvas { display: block; width: 100%; height: 100%; }
+    #cam { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; background: #0b1020; }
     .veil { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
       justify-content: center; text-align: center; gap: 18px; background: #0b1020; z-index: 20; padding: 24px; }
     .veil h1 { font-size: 40px; margin: 0; letter-spacing: 2px; }
@@ -38,6 +39,7 @@
   </style>
 </head>
 <body>
+  <video id="cam" autoplay playsinline muted></video>
   <div id="app"></div>
 
   <!-- タイトル/スタート オーバーレイ -->
@@ -48,10 +50,10 @@
     <div class="desc">
       iPadのカメラで<br>床やテーブルを写すと<br>モンスターが現れるよ。
     </div>
-    <button id="start-ar" class="big-btn">ARをはじめる</button>
+    <button id="start-ar" class="big-btn">カメラで はじめる</button>
     <button id="start-sim" class="big-btn secondary">デモ（PC用）</button>
     <div id="ar-error" class="ar-err hidden"></div>
-    <div class="note">※iPad/最新Safari推奨。カメラの許可を求めるダイアログが出ます。</div>
+    <div class="note">※iPadのカメラ（裏側）を部屋に向けると床の上にモンスターが現れます。カメラの許可ダイアログが出ます。</div>
   </div>
 
   <!-- AR/遊戯中 HUD -->
