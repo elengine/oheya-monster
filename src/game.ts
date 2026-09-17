@@ -1,6 +1,6 @@
 // おへやモンスター - AR/シミュレーション共通ゲームフィールド
-// Pokemon GO風: モンスター周囲の判定リングがズームイン・アウト。
-// 手前からスワイプでボールを投げ、リングが小さいときに当たると捕獲品質が上がる。
+// Pokemon GO風: モンスター正面に判定リング（ズームイン/アウト）。
+// 画面手前の可愛いボールをそっとスワイプで投げ、リングが小さいときに当たると高品質。
 
 import * as THREE from 'three';
 import { type Species, buildMonster } from './models';
@@ -24,10 +24,11 @@ type MonsterRef = {
   age: number;
 };
 
-type Ball = { mesh: THREE.Mesh; t: number; from: THREE.Vector3; mid: THREE.Vector3; to: THREE.Vector3 };
+type Ball = { mesh: THREE.Group; t: number; from: THREE.Vector3; mid: THREE.Vector3; to: THREE.Vector3 };
 
 const MAX_MONSTERS = 3;
 const BASE_RATE: Record<number, number> = { 1: 0.68, 2: 0.55, 3: 0.40 };
+const HAND_REST = new THREE.Vector3(0, 0.15, 1.9);
 
 export class GameField {
   renderer: THREE.WebGLRenderer;
@@ -37,9 +38,12 @@ export class GameField {
   currentCamera: THREE.Camera = this.camera;
   private monsters: MonsterRef[] = [];
   private balls: Ball[] = [];
+  private hand: THREE.Group;
   private cb: FieldCallbacks;
   private downT = 0;
   private downXY: [number, number] = [0, 0];
+  private dragging = false;
+  private dragPoint: THREE.Vector3 | null = null;
   private throwing = false;
 
   constructor(container: HTMLElement, cb: FieldCallbacks) {
@@ -56,13 +60,23 @@ export class GameField {
     this.scene.add(sun);
     this.scene.add(this.world);
 
-    // GO方式スワイプ: down で開始、up で投げ
+    // 画面手前に常時表示される「可愛いボール」
+    this.hand = this.makeBall();
+    this.hand.position.copy(HAND_REST);
+    this.scene.add(this.hand);
+
     const el = this.renderer.domElement;
     el.addEventListener('pointerdown', (e: PointerEvent) => {
       this.downT = performance.now();
       this.downXY = [e.clientX, e.clientY];
+      this.dragging = true;
+    });
+    el.addEventListener('pointermove', (e: PointerEvent) => {
+      if (!this.dragging) return;
+      this.dragPoint = this.pointAtPlane(e.clientX, e.clientY);
     });
     el.addEventListener('pointerup', (e: PointerEvent) => {
+      this.dragging = false;
       const dx = e.clientX - this.downXY[0];
       const dy = e.clientY - this.downXY[1];
       this.trySwipe(dx, dy, e.clientX, e.clientY);
@@ -82,27 +96,19 @@ export class GameField {
     const group = buildMonster(species);
     group.position.copy(pos);
 
-    // 判定リング（床に水平・ズームイン/アウトする丸枠）
-    const ringBase = (species.baseScale * 0.9) / 2;
+    // 判定リング: モンスターの正面（縦の丸枠・カメラ方向を向く）
+    const ringBase = species.baseScale * 0.55;
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.62, 1.0, 40),
-      new THREE.MeshBasicMaterial({ color: 0x3eff6a, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+      new THREE.MeshBasicMaterial({ color: 0x3eff6a, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
     );
-    ring.rotation.x = -Math.PI / 2;
-    ring.scale.multiplyScalar(ringBase);
-    ring.position.y = pos.y + 0.012;
+    ring.position.set(0, species.baseScale * 0.75, species.baseScale * 0.42); // 正面に立てる
+    ring.scale.setScalar(species.baseScale * 0.6);
     group.add(ring);
 
     const ref: MonsterRef = {
-      root: group,
-      ring,
-      ringPhase: Math.random() * Math.PI * 2,
-      ringBase,
-      ringR: 0.5,
-      species,
-      floorY: pos.y,
-      state: 'idle',
-      age: 0,
+      root: group, ring, ringPhase: Math.random() * Math.PI * 2,
+      ringBase, ringR: 0.5, species, floorY: pos.y, state: 'idle', age: 0,
     };
     group.userData.monsterRef = ref;
     group.traverse((o) => { o.userData.monsterRef = ref; });
@@ -120,11 +126,24 @@ export class GameField {
   projectToScreen(ref: MonsterRef): { x: number; y: number } {
     const v = new THREE.Vector3();
     ref.root.getWorldPosition(v);
-    v.y += ref.species.baseScale * 0.8;
+    v.y += ref.species.baseScale * 0.9;
     v.project(this.currentCamera);
     const w = this.renderer.domElement.clientWidth;
     const h = this.renderer.domElement.clientHeight;
     return { x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h };
+  }
+
+  /** 画面座標を手前の平面(z固定)上のワールド点に変換（ボールを指でつまむ用） */
+  private pointAtPlane(clientX: number, clientY: number): THREE.Vector3 {
+    const w = this.renderer.domElement.clientWidth;
+    const h = this.renderer.domElement.clientHeight;
+    const ndc = new THREE.Vector3((clientX / w) * 2 - 1, -(clientY / h) * 2 + 1, 0.5);
+    ndc.unproject(this.currentCamera);
+    const dir = ndc.sub(this.currentCamera.position);
+    const t = (HAND_REST.z - this.currentCamera.position.z) / dir.z;
+    const p = this.currentCamera.position.clone().add(dir.multiplyScalar(t));
+    p.y = Math.min(p.y, 0.5);
+    return p;
   }
 
   private trySwipe(dx: number, dy: number, upX: number, upY: number): void {
@@ -134,35 +153,53 @@ export class GameField {
     const isTap = dur < 320 && Math.hypot(dx, dy) < 30;
     if (!isSwipe && !isTap) return;
 
-    // 投げた先に最も近いモンスターを狙う
     let best: MonsterRef | null = null;
-    let bestD = isSwipe ? 230 : 120;
+    let bestD = isSwipe ? 240 : 130;
     for (const m of this.monsters) {
       if (m.state !== 'idle') continue;
       const p = this.projectToScreen(m);
       const d = Math.hypot(p.x - upX, p.y - upY);
       if (d < bestD) { bestD = d; best = m; }
     }
-    if (!best) { this.airThrow(upX); return; }
+    if (!best) { this.airThrow(); return; }
     this.throwAt(best);
   }
 
-  private airThrow(x: number): void {
-    const ball = this.makeBall();
-    ball.position.setFromMatrixPosition(this.currentCamera.matrixWorld).add(new THREE.Vector3(0, -0.3, 0));
-    this.world.add(ball);
-    ball.userData.targetRef = undefined;
-    const b: Ball = { mesh: ball, t: 0, from: ball.position.clone(), mid: ball.position.clone().add(new THREE.Vector3(0, 1.2, -1.5)), to: ball.position.clone().add(new THREE.Vector3(x * 0.01, 2.5, -4)) };
-    this.balls.push(b);
-    sfx('throw');
-    this.cb.setStatus('ボールは とどかなかった…');
+  /** 可愛いボール（ポケモンボール風 + 目） */
+  private makeBall(): THREE.Group {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.06, 20, 16), new THREE.MeshStandardMaterial({ color: 0xff7ca8, roughness: 0.35 }));
+    g.add(body);
+    // 白い帯（赤白ボール風）
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.062, 0.022, 20), new THREE.MeshStandardMaterial({ color: 0xf2f6ff, roughness: 0.5 }));
+    g.add(band);
+    // 中央ボタン
+    const btn = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 10), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 }));
+    btn.position.set(0, 0, 0.062);
+    g.add(btn);
+    // 目
+    const eyeM = new THREE.MeshStandardMaterial({ color: 0x2a1f3d, roughness: 0.4 });
+    for (const sx of [-0.024, 0.024]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.01, 8, 8), eyeM);
+      eye.position.set(sx, 0.018, 0.058);
+      g.add(eye);
+    }
+    // ハイライト
+    const hi = new THREE.Mesh(new THREE.SphereGeometry(0.004, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    hi.position.set(-0.028, 0.024, 0.066);
+    g.add(hi);
+    return g;
   }
 
-  private makeBall(): THREE.Mesh {
-    return new THREE.Mesh(
-      new THREE.SphereGeometry(0.06, 12, 10),
-      new THREE.MeshStandardMaterial({ color: 0xff4f6e, roughness: 0.3 })
-    );
+  private airThrow(): void {
+    const ball = this.makeBall();
+    ball.userData.targetRef = undefined;
+    ball.position.copy(this.hand.position);
+    this.scene.add(ball);
+    const to = new THREE.Vector3().copy(this.hand.position).add(new THREE.Vector3(0, 2.6, -4.5));
+    this.balls.push({ mesh: ball, t: 0, from: ball.position.clone(), mid: ball.position.clone().add(new THREE.Vector3(0, 1.4, -1.6)), to });
+    sfx('throw');
+    this.cb.setStatus('ボールは とどかなかった…');
   }
 
   private throwAt(ref: MonsterRef): void {
@@ -170,39 +207,36 @@ export class GameField {
     this.throwing = true;
     const target = new THREE.Vector3();
     ref.root.getWorldPosition(target);
-    target.y += ref.species.baseScale * 0.6;
-
-    const from = target.clone().add(new THREE.Vector3(0, -0.15, 1.4));
-    const mid = target.clone().add(new THREE.Vector3(0, 1.0, 0.4));
+    target.y += ref.species.baseScale * 0.7;
+    const from = this.hand.position.clone();
+    const mid = target.clone().add(new THREE.Vector3(0, 0.9, 0.5));
     const ball = this.makeBall();
     ball.userData.targetRef = ref;
     ball.position.copy(from);
-    this.world.add(ball);
-    this.balls.push({ mesh: ball, t: 0, from: from.clone(), mid, to: target.clone() });
-
-    // ゴーの「投げ」SE
+    this.scene.add(ball);
+    this.balls.push({ mesh: ball, t: 0, from, mid, to: target.clone() });
     sfx('throw');
   }
 
   private updateBall(b: Ball, ref: MonsterRef | null, dt: number): void {
-    b.t += dt / 0.4;
+    b.t += dt / 0.42;
     const k = Math.min(b.t, 1);
     const p = new THREE.Vector3().lerpVectors(b.from, b.mid, k);
     const q = new THREE.Vector3().lerpVectors(b.mid, b.to, k);
     b.mesh.position.lerpVectors(p, q, k);
-    if (k < 1) return;
-    this.world.remove(b.mesh);
-    if (ref) this.resolveCatch(ref);
+    if (k >= 1) {
+      this.scene.remove(b.mesh);
+      if (ref) this.resolveCatch(ref);
+    }
   }
 
   private resolveCatch(ref: MonsterRef): void {
     const sp = ref.species;
-    // リングの大きさに応じた品質（小さいほど返る値 f が小さい → 高性能）
     const f = ref.ringR;
     let mult = 1.0, quality = 'ok';
-    if (f <= 0.18) { mult = 1.8; quality = 'excellent'; }
-    else if (f <= 0.35) { mult = 1.5; quality = 'great'; }
-    else if (f <= 0.55) { mult = 1.25; quality = 'nice'; }
+    if (f <= 0.18) { mult = 1.8; quality = 'EXCELLENT'; }
+    else if (f <= 0.35) { mult = 1.5; quality = 'GREAT'; }
+    else if (f <= 0.55) { mult = 1.25; quality = 'NICE'; }
 
     const rate = Math.min(0.95, (BASE_RATE[sp.tier] ?? 0.6) * mult);
     if (Math.random() < rate) {
@@ -213,7 +247,6 @@ export class GameField {
       this.removeMonster(ref);
     } else {
       ref.state = 'fleeing';
-      ref.ring.visible = false;
       this.cb.setStatus(`${sp.name} は リングから とびだした…`);
       sfx('miss');
     }
@@ -222,7 +255,6 @@ export class GameField {
 
   private removeMonster(ref: MonsterRef): void {
     this.world.remove(ref.root);
-    this.world.remove(ref.ring);
     this.monsters = this.monsters.filter((m) => m !== ref);
   }
 
@@ -232,11 +264,10 @@ export class GameField {
     const amp = (ref.root.userData.bobAmp as number) ?? 0.03;
     ref.root.position.y = ref.floorY + Math.sin(ref.age * 3 + phase) * amp;
 
-    // 判定リングのズームイン・アウト
+    // 判定リングのズームイン・アウト（正面でサイズ/色が変わる）
     const s = 0.5 - 0.5 * Math.cos(ref.age * 2.6 + ref.ringPhase);
-    ref.ringR = 0.1 + s * 0.75; // 0.10〜0.85
+    ref.ringR = 0.1 + s * 0.75;
     ref.ring.scale.setScalar(ref.ringBase * (0.25 + s * 1.1));
-    // 色: 小→緑 / 中→黄 / 大→赤
     const c = ref.ring.material as THREE.MeshBasicMaterial;
     c.color.setHSL((1 - s) * 0.33, 0.9, 0.55);
 
@@ -250,11 +281,16 @@ export class GameField {
 
   update(dt: number): void {
     for (const ref of [...this.monsters]) this.updateMonster(ref, dt);
-    // ボール進行（targetRef は throwAt/airThrow で設定）
+
+    // 手前のボール: ドラッグ中は指に追従、それ以外は手前中央へ戻る
+    if (this.dragging && this.dragPoint) this.hand.position.lerp(this.dragPoint, 0.5);
+    else this.hand.position.lerp(HAND_REST, 0.1);
+    this.hand.rotation.y += dt * 2;
+
     for (const b of this.balls) {
       this.updateBall(b, (b.mesh.userData.targetRef as MonsterRef | undefined) ?? null, dt);
     }
-    this.balls = this.balls.filter((b) => b.mesh.parent === this.world);
+    this.balls = this.balls.filter((b) => b.mesh.parent === this.scene);
   }
 
   setCamera(cam: THREE.Camera): void {
