@@ -28,7 +28,7 @@ type Ball = { mesh: THREE.Group; t: number; from: THREE.Vector3; mid: THREE.Vect
 
 const MAX_MONSTERS = 3;
 const BASE_RATE: Record<number, number> = { 1: 0.68, 2: 0.55, 3: 0.40 };
-const HAND_REST = new THREE.Vector3(0, 0.15, 1.9);
+const HAND_DEPTH = 1.7; // 手前のボールを置く奥行(画面下へ常時投影)
 
 export class GameField {
   renderer: THREE.WebGLRenderer;
@@ -60,9 +60,9 @@ export class GameField {
     this.scene.add(sun);
     this.scene.add(this.world);
 
-    // 画面手前に常時表示される「可愛いボール」
+    // 画面手前に常時表示される「可愛いボール」（初期は画面下へ投影）
     this.hand = this.makeBall();
-    this.hand.position.copy(HAND_REST);
+    this.hand.position.copy(this.pointFromNdc(0, -0.7, HAND_DEPTH));
     this.scene.add(this.hand);
 
     const el = this.renderer.domElement;
@@ -133,17 +133,19 @@ export class GameField {
     return { x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h };
   }
 
+  /** NDC座標 → 手前の平面(奥行depth)上のワールド点 */
+  private pointFromNdc(nx: number, ny: number, depth: number): THREE.Vector3 {
+    const ndc = new THREE.Vector3(nx, ny, 0.5).unproject(this.currentCamera);
+    const dir = ndc.sub(this.currentCamera.position);
+    const t = (depth - this.currentCamera.position.z) / dir.z;
+    return this.currentCamera.position.clone().add(dir.multiplyScalar(t));
+  }
+
   /** 画面座標を手前の平面(z固定)上のワールド点に変換（ボールを指でつまむ用） */
   private pointAtPlane(clientX: number, clientY: number): THREE.Vector3 {
     const w = this.renderer.domElement.clientWidth;
     const h = this.renderer.domElement.clientHeight;
-    const ndc = new THREE.Vector3((clientX / w) * 2 - 1, -(clientY / h) * 2 + 1, 0.5);
-    ndc.unproject(this.currentCamera);
-    const dir = ndc.sub(this.currentCamera.position);
-    const t = (HAND_REST.z - this.currentCamera.position.z) / dir.z;
-    const p = this.currentCamera.position.clone().add(dir.multiplyScalar(t));
-    p.y = Math.min(p.y, 0.5);
-    return p;
+    return this.pointFromNdc((clientX / w) * 2 - 1, -(clientY / h) * 2 + 1, HAND_DEPTH);
   }
 
   private trySwipe(dx: number, dy: number, upX: number, upY: number): void {
@@ -282,9 +284,9 @@ export class GameField {
   update(dt: number): void {
     for (const ref of [...this.monsters]) this.updateMonster(ref, dt);
 
-    // 手前のボール: ドラッグ中は指に追従、それ以外は手前中央へ戻る
+    // 手前のボール: ドラッグ中は指に追従、それ以外は画面下中央へ戻る
     if (this.dragging && this.dragPoint) this.hand.position.lerp(this.dragPoint, 0.5);
-    else this.hand.position.lerp(HAND_REST, 0.1);
+    else this.hand.position.lerp(this.pointFromNdc(0, -0.72, HAND_DEPTH), 0.12);
     this.hand.rotation.y += dt * 2;
 
     for (const b of this.balls) {
