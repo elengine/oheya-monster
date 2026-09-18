@@ -3,7 +3,6 @@
 import { GameField } from './game';
 import * as THREE from 'three';
 import { startCamAR } from './camAR';
-import { startSim } from './sim';
 import { SPECIES } from './models';
 import { unlock, sfx, isMuted, setMuted, startBGM, stopBGM } from './audio';
 import { loadDex, totalCount } from './dex';
@@ -23,7 +22,6 @@ const camVideo = $<HTMLVideoElement>('cam');
 
 let field: GameField | null = null;
 let cancelCam: (() => void) | null = null;
-let cancelSim: (() => void) | null = null;
 let statusTimer: number | null = null;
 
 function showStatus(msg: string): void {
@@ -103,19 +101,8 @@ function showError(msg: string): void {
   el.classList.remove('hidden');
 }
 
-function onStartSim(): void {
-  unlock();
-  sfx('tap');
-  const f = makeField();
-  title.classList.add('hidden');
-  hud.classList.remove('hidden');
-  startBGM();
-  cancelSim = startSim(f, () => showTitle());
-}
-
 function exitGame(): void {
   sfx('tap');
-  if (cancelSim) { cancelSim(); cancelSim = null; }
   if (cancelCam) { cancelCam(); cancelCam = null; }
   showTitle();
   refreshCount();
@@ -149,7 +136,6 @@ function wire(): void {
   refreshSoundBtn();
 
   $<HTMLButtonElement>('start-ar').addEventListener('click', () => { void onStartCam(); });
-  $<HTMLButtonElement>('start-sim').addEventListener('click', onStartSim);
   $<HTMLButtonElement>('exit-btn').addEventListener('click', exitGame);
   soundBtn.addEventListener('click', () => { setMuted(!isMuted()); refreshSoundBtn(); sfx('tap'); });
   $<HTMLButtonElement>('dex-btn').addEventListener('click', () => { sfx('dex'); renderDex(); dex.classList.remove('hidden'); });

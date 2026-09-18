@@ -22,6 +22,7 @@ type MonsterRef = {
   floorY: number;
   state: 'idle' | 'targeted' | 'fleeing';
   age: number;
+  fleeAt: number;
 };
 
 type Ball = { mesh: THREE.Group; t: number; from: THREE.Vector3; mid: THREE.Vector3; to: THREE.Vector3 };
@@ -128,7 +129,7 @@ export class GameField {
 
     const ref: MonsterRef = {
       root: group, ring, ringPhase: Math.random() * Math.PI * 2,
-      ringBase, ringR: 0.5, species, floorY: pos.y, state: 'idle', age: 0,
+      ringBase, ringR: 0.5, species, floorY: pos.y, state: 'idle', age: 0, fleeAt: 0,
     };
     group.userData.monsterRef = ref;
     group.traverse((o) => { o.userData.monsterRef = ref; });
@@ -276,8 +277,9 @@ export class GameField {
       this.removeMonster(ref);
     } else {
       ref.state = 'fleeing';
-      this.cb.setStatus(`${sp.name} は リングから とびだした…`);
-      sfx('miss');
+      ref.fleeAt = ref.age;
+      this.cb.setStatus(`${ref.species.name} は にげてしまった…`);
+      sfx('flee');
     }
     this.throwing = false;
   }
@@ -301,10 +303,15 @@ export class GameField {
     c.color.setHSL((1 - s) * 0.33, 0.9, 0.55);
 
     if (ref.state === 'fleeing') {
-      ref.root.rotation.y += dt * 6;
-      ref.root.position.y += Math.abs(Math.sin(ref.age * 10)) * 0.03;
-      ref.root.scale.multiplyScalar(1 - dt * 1.2);
-      if (ref.root.scale.x < 0.05) this.removeMonster(ref);
+      // 逃げた = 手前へ飛び出してバタバタしながら転がり消える（ズームアウト→逃出演出）
+      const k = Math.max(0, Math.min(1, (ref.age - ref.fleeAt) / 0.7)); // 逃げ始めからの進度
+      ref.root.rotation.y += dt * 16;
+      ref.root.rotation.z += dt * 6;            // 傾いて転がる
+      ref.root.position.z += dt * 1.8;         // カメラ方向（手前）へ飛び出して逃げる
+      ref.root.position.y += Math.sin(ref.age * 24) * dt * 1.4; // バタバタ
+      const inv = 1 - dt * 1.6;
+      ref.root.scale.multiplyScalar(Math.max(inv, 0.35 - k * 0.3));
+      if (k >= 1 || ref.root.scale.x < 0.05) this.removeMonster(ref);
     }
   }
 

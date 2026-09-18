@@ -77,7 +77,7 @@ function noise(dur: number, opts: { delay?: number; vol?: number; freq?: number;
 }
 
 export type SfxName =
-  | 'tap' | 'spawn' | 'throw' | 'hit' | 'catch' | 'miss' | 'dex' | 'start' | 'tick';
+  | 'tap' | 'spawn' | 'throw' | 'hit' | 'catch' | 'flee' | 'miss' | 'dex' | 'start' | 'tick';
 
 export function sfx(name: SfxName): void {
   unlock();
@@ -87,7 +87,13 @@ export function sfx(name: SfxName): void {
     case 'spawn': tone(392, 0.16, { glideTo: 660, vol: 0.3 }); tone(523, 0.2, { delay: 0.05, vol: 0.2 }); break;
     case 'throw': noise(0.16, { freq: 2400, vol: 0.25 }); break;
     case 'hit': tone(880, 0.1, { type: 'square', vol: 0.3 }); noise(0.08, { freq: 4000, vol: 0.2 }); break;
-    case 'catch': tone(523, 0.12, { type: 'triangle' }); tone(659, 0.12, { delay: 0.08 }); tone(784, 0.22, { delay: 0.16, glideTo: 988 }); break;
+    // 捕獲=嬉しい成功音: 明るい上昇アルペジオ + キラッ
+    case 'catch': tone(523, 0.1, { type: 'triangle' }); tone(659, 0.1, { delay: 0.07 });
+      tone(784, 0.16, { delay: 0.14 }); tone(1046, 0.34, { delay: 0.2, glideTo: 1318, vol: 0.34 });
+      noise(0.2, { delay: 0.22, freq: 6500, vol: 0.12 }); break;
+    // 逃走=低音ブブー: 下がる唸り(失敗感を強調)
+    case 'flee': tone(196, 0.16, { type: 'sawtooth', vol: 0.38 });
+      tone(147, 0.3, { delay: 0.12, type: 'sawtooth', vol: 0.38, glideTo: 92 }); break;
     case 'miss': tone(330, 0.2, { glideTo: 220, type: 'sawtooth', vol: 0.25 }); break;
     case 'dex': tone(660, 0.1, { type: 'sine' }); tone(880, 0.1, { delay: 0.07, type: 'sine' }); break;
     case 'tick': tone(600, 0.05, { type: 'sine', vol: 0.2 }); break;
