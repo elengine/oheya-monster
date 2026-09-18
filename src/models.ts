@@ -1,6 +1,8 @@
 // おへやモンスター - モンスター種定義 + three.jsプリミティブ合成の低ポリ生物
 
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 export type Species = {
   id: string;
@@ -40,6 +42,44 @@ function mat(color: number, rough = 0.85): THREE.MeshStandardMaterial {
 }
 
 const footM = mat(0x4a3a30, 0.95);
+
+// CC0 クリーチャー(glTF/GLB) — Gobkit Free Pack / Quaternius系 CC0。models/LICENSE参照
+const MODEL_PATHS = ['minion-a01', 'minion-b01', 'minion-c01', 'minion-d01', 'Anglerfish', 'Jellyfish']
+  .map((n) => `${import.meta.env.BASE_URL}models/${n}.glb`);
+
+export async function loadMonsterModels(): Promise<THREE.Object3D[]> {
+  const loader = new GLTFLoader();
+  const out: THREE.Object3D[] = [];
+  for (const p of MODEL_PATHS) {
+    try {
+      const g = await loader.loadAsync(p);
+      out.push(g.scene);
+    } catch (e) {
+      console.warn('[oheya] model load fail', p, e);
+    }
+  }
+  return out;
+}
+
+/** モデルを種の実寸にフィット（足元y=0, XZ中心）して複製（rig対応 clone） */
+export function adaptModel(base: THREE.Object3D, heightScale: number): THREE.Group {
+  const g = SkeletonUtils.clone(base) as THREE.Group;
+  const s = sizeScale(base, heightScale);
+  g.scale.setScalar(s);
+  g.updateMatrixWorld(true);
+  const b = new THREE.Box3().setFromObject(g);
+  g.position.x -= (b.min.x + b.max.x) / 2;
+  g.position.z -= (b.min.z + b.max.z) / 2;
+  g.position.y -= b.min.y;
+  return g;
+}
+
+function sizeScale(o: THREE.Object3D, heightScale: number): number {
+  const b = new THREE.Box3().setFromObject(o);
+  const size = b.getSize(new THREE.Vector3());
+  return size.y ? (heightScale / size.y) * 1.5 : heightScale;
+}
+
 
 /**
  * 種に応じてオリジナル低ポリ生物を組み立てる。

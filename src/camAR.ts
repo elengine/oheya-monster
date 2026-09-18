@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { GameField } from './game';
-import { tierRoll } from './models';
+import { tierRoll, loadMonsterModels } from './models';
 import { sfx } from './audio';
 import { startGyro } from './gyro';
 
@@ -51,6 +51,8 @@ export async function startCamAR(
   field.spawnAt(new THREE.Vector3(-0.6, 0, 0.2), tierRoll(Math.random));
   field.spawnAt(new THREE.Vector3(0.6, 0, 0.0), tierRoll(Math.random));
   field.spawnAt(new THREE.Vector3(0.0, 0, -0.3), tierRoll(Math.random));
+
+  loadMonsterModels().then((m) => { if (m.length) field.setModelPool(m); });
 
   let cooldown = 3.5;
   let prev = -1;

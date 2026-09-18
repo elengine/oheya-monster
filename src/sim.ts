@@ -4,10 +4,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GameField } from './game';
-import { tierRoll } from './models';
+import { tierRoll, loadMonsterModels } from './models';
 import { sfx } from './audio';
 
 export function startSim(field: GameField, onEnd: () => void): () => void {
+  loadMonsterModels().then((m) => { if (m.length) field.setModelPool(m); });
   const d = field.renderer.domElement;
 
   // 部屋の「床」と「テーブル」を模した仮想平面

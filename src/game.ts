@@ -3,7 +3,7 @@
 // 画面手前の可愛いボールをそっとスワイプで投げ、リングが小さいときに当たると高品質。
 
 import * as THREE from 'three';
-import { type Species, buildMonster } from './models';
+import { type Species, buildMonster, adaptModel } from './models';
 import { sfx } from './audio';
 import { addCatch } from './dex';
 
@@ -41,11 +41,15 @@ export class GameField {
   private hand: THREE.Group | null;
   private nextHandT = 0;
   private cb: FieldCallbacks;
+  private pool: THREE.Object3D[] = [];
+  private poolIdx = 0;
   private downT = 0;
   private downXY: [number, number] = [0, 0];
   private dragging = false;
   private dragPoint: THREE.Vector3 | null = null;
   private throwing = false;
+
+  setModelPool(p: THREE.Object3D[]): void { this.pool = p; }
 
   constructor(container: HTMLElement, cb: FieldCallbacks) {
     this.cb = cb;
@@ -94,8 +98,20 @@ export class GameField {
   }
 
   spawnAt(pos: THREE.Vector3, species: Species): MonsterRef {
-    const group = buildMonster(species);
-    group.position.copy(pos);
+    const group = this.pool.length
+      ? adaptModel(this.pool[this.poolIdx++ % this.pool.length], species.baseScale)
+      : buildMonster(species);
+    group.position.x += pos.x;
+    group.position.y += pos.y;
+    group.position.z += pos.z;
+    // 床影（glTF/プロシージャル共通）
+    const sh = new THREE.Mesh(
+      new THREE.CircleGeometry(species.baseScale * 0.62, 20),
+      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false })
+    );
+    sh.rotation.x = -Math.PI / 2;
+    sh.position.y = 0.004;
+    group.add(sh);
 
     // 判定リング: モンスターの正面（縦の丸枠・カメラ方向を向く）
     const ringBase = species.baseScale * 0.55;
