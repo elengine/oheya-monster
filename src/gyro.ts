@@ -14,6 +14,17 @@ export type GyroHandle = {
 const deg = (v: number | null) => THREE.MathUtils.degToRad(v ?? 0);
 const Z = new THREE.Vector3(0, 0, 1);
 
+// iOS/iPadOS: モーション許可ポップアップは「タップ直後」に呼ぶと安定して出る。
+// iOS13+は設定トグル廃止のため、この requestPermission が正規ルート。
+export async function requestGyroPermission(): Promise<boolean> {
+  const DOE = window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> };
+  if (typeof DOE.requestPermission === 'function') {
+    const p = await DOE.requestPermission().catch(() => 'denied');
+    return p === 'granted';
+  }
+  return true;
+}
+
 export async function startGyro(baseQ: THREE.Quaternion): Promise<GyroHandle> {
   const handle: GyroHandle = {
     active: false,

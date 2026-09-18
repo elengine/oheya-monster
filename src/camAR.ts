@@ -6,13 +6,16 @@ import * as THREE from 'three';
 import { GameField } from './game';
 import { tierRoll, loadMonsterModels } from './models';
 import { sfx } from './audio';
-import { startGyro } from './gyro';
+import { startGyro, requestGyroPermission } from './gyro';
 
 export async function startCamAR(
   field: GameField,
   video: HTMLVideoElement,
   onEnd: () => void,
 ): Promise<() => void> {
+  // タップ直後(カメラ許可より先)にジャイロ許可を要求 → iOS/iPadOS26でポップアップが出る
+  await requestGyroPermission();
+
   let stream: MediaStream | null = null;
   if (navigator.mediaDevices?.getUserMedia) {
     try {
