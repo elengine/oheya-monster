@@ -127,6 +127,19 @@ export function buildMonster(species: Species): THREE.Group {
   }
 
   // 揺れアニメ用の基準
+  // リッチ演出: エミッシブ発光 + オーラ
+  const bodyM = bodyColor as THREE.MeshStandardMaterial;
+  bodyM.emissive = new THREE.Color(species.color);
+  bodyM.emissiveIntensity = 0.28;
+  bodyM.roughness = 0.35;
+  const glow = new THREE.Mesh(
+    new THREE.SphereGeometry(S * 1.5, 16, 12),
+    new THREE.MeshBasicMaterial({ color: species.accent, transparent: true, opacity: 0.10, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  glow.position.y = S * 1.1;
+  glow.scale.y = 0.85;
+  g.add(glow);
+
   g.userData.bobPhase = Math.random() * Math.PI * 2;
   g.userData.bobAmp = 0.03 + Math.random() * 0.03;
 

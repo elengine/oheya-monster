@@ -194,12 +194,15 @@ export class GameField {
   }
 
   private airThrow(): void {
-    const ball = this.makeBall();
+    const ball = this.hand; // 手前のボール自体を飛ばす
     ball.userData.targetRef = undefined;
-    ball.position.copy(this.hand.position);
-    this.scene.add(ball);
-    const to = new THREE.Vector3().copy(this.hand.position).add(new THREE.Vector3(0, 2.6, -4.5));
-    this.balls.push({ mesh: ball, t: 0, from: ball.position.clone(), mid: ball.position.clone().add(new THREE.Vector3(0, 1.4, -1.6)), to });
+    const from = ball.position.clone();
+    const to = from.clone().add(new THREE.Vector3(0, 2.6, -4.5));
+    this.balls.push({ mesh: ball, t: 0, from, mid: from.clone().add(new THREE.Vector3(0, 1.4, -1.6)), to });
+
+    this.hand = this.makeBall();
+    this.hand.position.copy(this.pointFromNdc(0, -0.72, HAND_DEPTH));
+    this.scene.add(this.hand);
     sfx('throw');
     this.cb.setStatus('ボールは とどかなかった…');
   }
@@ -210,13 +213,17 @@ export class GameField {
     const target = new THREE.Vector3();
     ref.root.getWorldPosition(target);
     target.y += ref.species.baseScale * 0.7;
-    const from = this.hand.position.clone();
-    const mid = target.clone().add(new THREE.Vector3(0, 0.9, 0.5));
-    const ball = this.makeBall();
+
+    // 手前のボール自体を飛ばす（新しい手前ボールは次のために補充）
+    const ball = this.hand;
     ball.userData.targetRef = ref;
-    ball.position.copy(from);
-    this.scene.add(ball);
+    const from = ball.position.clone();
+    const mid = target.clone().add(new THREE.Vector3(0, 0.9, 0.5));
     this.balls.push({ mesh: ball, t: 0, from, mid, to: target.clone() });
+
+    this.hand = this.makeBall();
+    this.hand.position.copy(this.pointFromNdc(0, -0.72, HAND_DEPTH));
+    this.scene.add(this.hand);
     sfx('throw');
   }
 

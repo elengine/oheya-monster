@@ -24,6 +24,17 @@ const camVideo = $<HTMLVideoElement>('cam');
 let field: GameField | null = null;
 let cancelCam: (() => void) | null = null;
 let cancelSim: (() => void) | null = null;
+let statusTimer: number | null = null;
+
+function showStatus(msg: string): void {
+  if (statusTimer) { clearTimeout(statusTimer); statusTimer = null; }
+  if (!msg) { statusTip.classList.remove('show'); statusTip.textContent = ''; return; }
+  statusTip.textContent = msg;
+  statusTip.classList.remove('show');
+  void statusTip.offsetWidth; // rAF/reflowで再アニメーション
+  statusTip.classList.add('show');
+  statusTimer = window.setTimeout(() => { statusTip.classList.remove('show'); }, 2800);
+}
 
 function refreshCount(): void {
   catchCounter.textContent = `つかまえた: ${totalCount()}`;
@@ -36,7 +47,7 @@ function refreshSoundBtn(): void {
 function makeField(): GameField {
   if (field) return field;
   const f = new GameField(app, {
-    setStatus: (msg) => { statusTip.textContent = msg; },
+    setStatus: (msg) => showStatus(msg),
     onCatch: () => refreshCount(),
   });
   field = f;
