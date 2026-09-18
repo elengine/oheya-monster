@@ -43,9 +43,10 @@ export class GameField {
   private cb: FieldCallbacks;
   private pool: THREE.Object3D[] = [];
   private poolIdx = 0;
-  private downT = 0;
   private downXY: [number, number] = [0, 0];
+  private upXY: [number, number] = [0, 0];
   private dragging = false;
+  private moved = false;
   private dragPoint: THREE.Vector3 | null = null;
   private throwing = false;
 
@@ -72,19 +73,19 @@ export class GameField {
 
     const el = this.renderer.domElement;
     el.addEventListener('pointerdown', (e: PointerEvent) => {
-      this.downT = performance.now();
       this.downXY = [e.clientX, e.clientY];
       this.dragging = true;
+      this.moved = false;
     });
     el.addEventListener('pointermove', (e: PointerEvent) => {
       if (!this.dragging) return;
+      if (Math.hypot(e.clientX - this.downXY[0], e.clientY - this.downXY[1]) > 12) this.moved = true;
       this.dragPoint = this.pointAtPlane(e.clientX, e.clientY);
     });
     el.addEventListener('pointerup', (e: PointerEvent) => {
       this.dragging = false;
-      const dx = e.clientX - this.downXY[0];
-      const dy = e.clientY - this.downXY[1];
-      this.trySwipe(dx, dy, e.clientX, e.clientY);
+      this.upXY = [e.clientX, e.clientY];
+      this.trySwipe();
     });
   }
 
@@ -165,19 +166,17 @@ export class GameField {
     return this.pointFromNdc((clientX / w) * 2 - 1, -(clientY / h) * 2 + 1, HAND_DEPTH);
   }
 
-  private trySwipe(dx: number, dy: number, upX: number, upY: number): void {
+  private trySwipe(): void {
+    // タップ（移動なし）では飛ばさない / わずかな移動でも速度に関係なく飛ばす
+    if (!this.moved) return;
     if (this.throwing && this.hand) return;
-    const dur = performance.now() - this.downT;
-    const isSwipe = dur < 800 && Math.hypot(dx, dy) > 20; // 判定を緩く（頻度向上）
-    const isTap = dur < 360 && Math.hypot(dx, dy) < 20;
-    if (!isSwipe && !isTap) return;
 
     let best: MonsterRef | null = null;
-    let bestD = isSwipe ? 260 : 140;
+    let bestD = 300;
     for (const m of this.monsters) {
       if (m.state !== 'idle') continue;
       const p = this.projectToScreen(m);
-      const d = Math.hypot(p.x - upX, p.y - upY);
+      const d = Math.hypot(p.x - this.upXY[0], p.y - this.upXY[1]);
       if (d < bestD) { bestD = d; best = m; }
     }
     if (!best || !this.hand) { if (this.hand) this.airThrow(); return; }
