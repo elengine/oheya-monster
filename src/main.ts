@@ -83,6 +83,7 @@ async function onStartCam(): Promise<void> {
   sfx('tap');
   const f = makeField();
   f.setMax(parseInt(localStorage.getItem('oheya:max') || '5', 10) || 5);
+  f.setFlyHeight(parseInt(localStorage.getItem('oheya:flyh') || '3', 10) || 3);
   showError('');
   try {
     title.classList.add('hidden');
@@ -167,6 +168,12 @@ function wire(): void {
   const dv = dSaved != null ? dSaved : '3';
   depth.value = dv; depthVal.textContent = dv;
   depth.addEventListener('input', () => { depthVal.textContent = depth.value; localStorage.setItem('oheya:depth', depth.value); });
+  const flyh = $<HTMLInputElement>('flyh');
+  const flyhVal = $('flyh-val');
+  const fh = localStorage.getItem('oheya:flyh');
+  const fhv = fh != null ? fh : '3';
+  flyh.value = fhv; flyhVal.textContent = fhv;
+  flyh.addEventListener('input', () => { flyhVal.textContent = flyh.value; localStorage.setItem('oheya:flyh', flyh.value); });
   soundBtn.addEventListener('click', () => { setMuted(!isMuted()); refreshSoundBtn(); sfx('tap'); });
   $<HTMLButtonElement>('dex-btn').addEventListener('click', () => { sfx('dex'); renderDex(); dex.classList.remove('hidden'); });
   $<HTMLButtonElement>('dex-close').addEventListener('click', () => { sfx('tap'); dex.classList.add('hidden'); });

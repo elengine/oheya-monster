@@ -108,8 +108,13 @@ export class GameField {
   }
 
   spawnAt(pos: THREE.Vector3, species: Species): MonsterRef {
+    const motion = (['breathe', 'stretch', 'hop', 'fly'] as MotionKind[])[Math.floor(Math.random() * 4)];
+    const isFly = motion === 'fly';
+    const slot = isFly && this.pool.length >= 4
+      ? (4 + Math.floor(Math.random() * (this.pool.length - 4))) % this.pool.length
+      : (this.pool.length ? this.poolIdx++ % this.pool.length : 0);
     const group = this.pool.length
-      ? adaptModel(this.pool[this.poolIdx++ % this.pool.length], species.baseScale)
+      ? adaptModel(this.pool[Math.max(0, slot)], species.baseScale)
       : buildMonster(species);
     group.position.x += pos.x;
     group.position.y += pos.y;
@@ -136,7 +141,7 @@ export class GameField {
     const ref: MonsterRef = {
       root: group, ring, ringPhase: Math.random() * Math.PI * 2,
       ringBase, ringR: 0.5, species, floorY: pos.y, floorX: pos.x,
-      motion: (['breathe', 'stretch', 'hop', 'fly'] as MotionKind[])[Math.floor(Math.random() * 4)],
+      motion,
       m0: group.scale.clone(), fleeDir: Math.random() < 0.5 ? -1 : 1, state: 'idle', age: 0, fleeAt: 0,
     };
     group.userData.monsterRef = ref;
@@ -152,6 +157,8 @@ export class GameField {
   private maxN = MAX_MONSTERS;
   setMax(n: number): void { this.maxN = Math.max(1, Math.min(10, Math.round(n))); }
   maxCount(): number { return this.maxN; }
+  private flyH = 3;
+  setFlyHeight(n: number): void { this.flyH = n; }
 
   /** モンスターの画面座標（QA/ターゲット選択用） */
   projectToScreen(ref: MonsterRef): { x: number; y: number } {
@@ -318,8 +325,8 @@ export class GameField {
         ref.root.position.x = ref.floorX + Math.sin(t * 2.2 + ph) * 0.28;
         y = ref.floorY + Math.abs(Math.sin(t * 6 + ph)) * m0.y * 0.95;
         break;
-      case 'fly':      // 飛んでいる(浮いてふわふわ)
-        y = ref.floorY + m0.y * 2.4 + Math.sin(t * 3 + ph) * m0.y * 0.3;
+      case 'fly':      // 飛んでいる(設定の高さに浮いてふわふわ)
+        y = ref.floorY + m0.y * this.flyH + Math.sin(t * 3 + ph) * m0.y * 0.3;
         break;
     }
     ref.root.position.y = y;
