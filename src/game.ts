@@ -110,8 +110,8 @@ export class GameField {
   spawnAt(pos: THREE.Vector3, species: Species): MonsterRef {
     const motion = (['breathe', 'stretch', 'hop', 'fly'] as MotionKind[])[Math.floor(Math.random() * 4)];
     const isFly = motion === 'fly';
-    const slot = isFly && this.pool.length >= 4
-      ? (4 + Math.floor(Math.random() * (this.pool.length - 4))) % this.pool.length
+    const slot = isFly && this.pool.length >= 2
+      ? (this.pool.length - 2) + Math.floor(Math.random() * 2) // 空を飛ぶ系(蝙蝠・クラゲ等)のみ
       : (this.pool.length ? this.poolIdx++ % this.pool.length : 0);
     const group = this.pool.length
       ? adaptModel(this.pool[Math.max(0, slot)], species.baseScale)
@@ -338,12 +338,12 @@ export class GameField {
     c.color.setHSL((1 - s) * 0.33, 0.9, 0.55);
 
     if (ref.state === 'fleeing') {
-      // 逃げた = 左か右に飛び跳ねながら即座にフレームアウトして消える
+      // 逃げた = 飛び跳ねながら左右へ、約1秒でフレームアウト（小さくしない）
       ref.root.rotation.y += dt * 8;
-      ref.root.position.x += ref.fleeDir * dt * 3.2;   // 左右へ素早く移動
-      ref.root.position.y = ref.floorY + Math.abs(Math.sin(ref.age * 13 + ref.ringPhase)) * ref.m0.y * 0.5; // 飛び跳ねる
-      ref.root.scale.multiplyScalar(1 - dt * 2.4);     // 素早く縮む
-      if (ref.root.scale.x < 0.2) this.removeMonster(ref);
+      ref.root.rotation.z += Math.sin(ref.age * 13) * dt * 3;
+      ref.root.position.x += ref.fleeDir * dt * 3.4;   // 左右へ移動
+      ref.root.position.y = ref.floorY + Math.abs(Math.sin(ref.age * 13 + ref.ringPhase)) * ref.m0.y * 0.55; // 飛び跳ねる
+      if (ref.age - ref.fleeAt > 1.0) this.removeMonster(ref); // 約1秒で消す
     }
   }
 
