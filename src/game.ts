@@ -38,7 +38,8 @@ export class GameField {
   currentCamera: THREE.Camera = this.camera;
   private monsters: MonsterRef[] = [];
   private balls: Ball[] = [];
-  private hand: THREE.Group;
+  private hand: THREE.Group | null;
+  private nextHandT = 0;
   private cb: FieldCallbacks;
   private downT = 0;
   private downXY: [number, number] = [0, 0];
@@ -62,7 +63,7 @@ export class GameField {
 
     // 画面手前に常時表示される「可愛いボール」（初期は画面下へ投影）
     this.hand = this.makeBall();
-    this.hand.position.copy(this.pointFromNdc(0, -0.7, HAND_DEPTH));
+    this.hand.position.copy(this.pointFromNdc(0, -0.72, HAND_DEPTH));
     this.scene.add(this.hand);
 
     const el = this.renderer.domElement;
@@ -149,21 +150,21 @@ export class GameField {
   }
 
   private trySwipe(dx: number, dy: number, upX: number, upY: number): void {
-    if (this.throwing) return;
+    if (this.throwing && this.hand) return;
     const dur = performance.now() - this.downT;
-    const isSwipe = dur < 550 && Math.hypot(dx, dy) > 46;
-    const isTap = dur < 320 && Math.hypot(dx, dy) < 30;
+    const isSwipe = dur < 800 && Math.hypot(dx, dy) > 20; // 判定を緩く（頻度向上）
+    const isTap = dur < 360 && Math.hypot(dx, dy) < 20;
     if (!isSwipe && !isTap) return;
 
     let best: MonsterRef | null = null;
-    let bestD = isSwipe ? 240 : 130;
+    let bestD = isSwipe ? 260 : 140;
     for (const m of this.monsters) {
       if (m.state !== 'idle') continue;
       const p = this.projectToScreen(m);
       const d = Math.hypot(p.x - upX, p.y - upY);
       if (d < bestD) { bestD = d; best = m; }
     }
-    if (!best) { this.airThrow(); return; }
+    if (!best || !this.hand) { if (this.hand) this.airThrow(); return; }
     this.throwAt(best);
   }
 
@@ -194,36 +195,38 @@ export class GameField {
   }
 
   private airThrow(): void {
+    if (this.throwing || !this.hand) return;
     const ball = this.hand; // 手前のボール自体を飛ばす
     ball.userData.targetRef = undefined;
+    ball.scale.setScalar(1.25);
     const from = ball.position.clone();
     const to = from.clone().add(new THREE.Vector3(0, 2.6, -4.5));
     this.balls.push({ mesh: ball, t: 0, from, mid: from.clone().add(new THREE.Vector3(0, 1.4, -1.6)), to });
-
-    this.hand = this.makeBall();
-    this.hand.position.copy(this.pointFromNdc(0, -0.72, HAND_DEPTH));
-    this.scene.add(this.hand);
+    this.hand = null;
+    this.nextHandT = performance.now() + 450;
     sfx('throw');
     this.cb.setStatus('ボールは とどかなかった…');
   }
 
   private throwAt(ref: MonsterRef): void {
+    if (this.throwing || !this.hand) return;
     ref.state = 'targeted';
     this.throwing = true;
     const target = new THREE.Vector3();
     ref.root.getWorldPosition(target);
     target.y += ref.species.baseScale * 0.7;
 
-    // 手前のボール自体を飛ばす（新しい手前ボールは次のために補充）
+    // 手前のボール自体を飛ばす（投げたら下は一瞬空き、後から新しいボールが降ってくる）
     const ball = this.hand;
     ball.userData.targetRef = ref;
     const from = ball.position.clone();
     const mid = target.clone().add(new THREE.Vector3(0, 0.9, 0.5));
     this.balls.push({ mesh: ball, t: 0, from, mid, to: target.clone() });
+    this.hand = null;
+    this.nextHandT = performance.now() + 450;
 
-    this.hand = this.makeBall();
-    this.hand.position.copy(this.pointFromNdc(0, -0.72, HAND_DEPTH));
-    this.scene.add(this.hand);
+    // 投げたボールを強調（持ち上げて大きく）
+    ball.scale.setScalar(1.25);
     sfx('throw');
   }
 
@@ -291,10 +294,21 @@ export class GameField {
   update(dt: number): void {
     for (const ref of [...this.monsters]) this.updateMonster(ref, dt);
 
-    // 手前のボール: ドラッグ中は指に追従、それ以外は画面下中央へ戻る
-    if (this.dragging && this.dragPoint) this.hand.position.lerp(this.dragPoint, 0.5);
-    else this.hand.position.lerp(this.pointFromNdc(0, -0.72, HAND_DEPTH), 0.12);
-    this.hand.rotation.y += dt * 2;
+    // 手前のボール: 投げた直後は空 → 少し経ってから新しいボールが降りてくる
+    if (!this.hand) {
+      if (performance.now() >= this.nextHandT) {
+        const h = this.makeBall();
+        h.position.copy(this.pointFromNdc(0, -0.72, HAND_DEPTH));
+        h.scale.setScalar(0.3);
+        this.scene.add(h);
+        this.hand = h;
+      }
+    } else {
+      if (this.dragging && this.dragPoint) this.hand.position.lerp(this.dragPoint, 0.5);
+      else this.hand.position.lerp(this.pointFromNdc(0, -0.72, HAND_DEPTH), 0.12);
+      this.hand.scale.lerp(new THREE.Vector3(1, 1, 1), 0.12);
+      this.hand.rotation.y += dt * 2;
+    }
 
     for (const b of this.balls) {
       this.updateBall(b, (b.mesh.userData.targetRef as MonsterRef | undefined) ?? null, dt);
