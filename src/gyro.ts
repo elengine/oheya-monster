@@ -55,6 +55,10 @@ export async function startGyro(baseQ: THREE.Quaternion): Promise<GyroHandle> {
     qAbs.multiply(qz);
     qAbs.multiply(z90Q).multiply(q1);
     handle.q.copy(baseQ).multiply(qAbs);
+    // ロール(首を傾ける軸)=0 にし、ヨー(左右)＋ピッチ(仰ぎ)のみのFPS視点に →
+    // 地平線を水平に保ち、モンスター/ボールが横倒しで視界から消えない
+    const _e = new THREE.Euler().setFromQuaternion(handle.q, 'YXZ');
+    handle.q.setFromEuler(new THREE.Euler(_e.x, _e.y, 0, 'YXZ'));
     handle.live = () => ({ alpha: e.alpha, beta: e.beta, gamma: e.gamma });
     handle.active = true;
   };
