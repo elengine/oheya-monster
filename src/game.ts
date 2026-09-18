@@ -72,6 +72,8 @@ export class GameField {
     this.scene.add(this.hand);
 
     const el = this.renderer.domElement;
+    el.style.touchAction = 'none';
+    el.addEventListener('touchmove', (e: TouchEvent) => e.preventDefault(), { passive: false });
     el.addEventListener('pointerdown', (e: PointerEvent) => {
       this.downXY = [e.clientX, e.clientY];
       this.dragging = true;
