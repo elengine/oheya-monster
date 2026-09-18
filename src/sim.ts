@@ -2,14 +2,12 @@
 // 仮想の床とテーブルを作り、その上にモンスターを配置してARなしで遊べる。
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GameField } from './game';
 import { tierRoll, loadMonsterModels } from './models';
 import { sfx } from './audio';
 
 export function startSim(field: GameField, onEnd: () => void): () => void {
   loadMonsterModels().then((m) => { if (m.length) field.setModelPool(m); });
-  const d = field.renderer.domElement;
 
   // 部屋の「床」と「テーブル」を模した仮想平面
   const floorMat = new THREE.MeshStandardMaterial({ color: 0x2a2f42, roughness: 0.9 });
@@ -40,17 +38,11 @@ export function startSim(field: GameField, onEnd: () => void): () => void {
   guide.position.y = 0.79;
   field.scene.add(guide);
 
-  // カメラ
+  // カメラ（固定・視点移動なし: フリックでボールを飛ばす専用）
   field.camera.position.set(1.4, 1.35, 2.4);
   field.camera.lookAt(0.2, 0.4, 0);
   field.setCamera(field.camera);
   field.onResize();
-
-  const controls = new OrbitControls(field.camera, d);
-  controls.target.set(0.2, 0.4, 0);
-  controls.enableDamping = true;
-  controls.minDistance = 0.5;
-  controls.maxDistance = 6;
 
   // 初期モンスター（床2 + テーブル1）
   field.spawnAt(new THREE.Vector3(-0.9, 0, -0.4), tierRoll(Math.random));
@@ -63,7 +55,6 @@ export function startSim(field: GameField, onEnd: () => void): () => void {
   field.renderer.setAnimationLoop((now) => {
     const dt = prev < 0 ? 0 : (now - prev) / 1000;
     prev = now;
-    controls.update();
     cooldown -= dt;
     if (cooldown <= 0) {
       const onFloor = Math.random() < 0.7;
