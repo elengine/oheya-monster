@@ -71,11 +71,13 @@
   </div>
 
   <!-- 設定画面 -->
-  <div id="settings" class="title hidden">
+  <div id="settings" class="veil hidden">
     <h1>設定</h1>
-    <div class="ver">地平線の角度の微調整</div>
-    <div class="set-row">地平線 <b id="horizon-val">0°</b></div>
+    <div class="ver">実空間とのズレを調整</div>
+    <div class="set-row">地平線（奥の上下） <b id="horizon-val">0°</b></div>
     <input type="range" id="horizon" min="-30" max="30" step="1" value="0" aria-label="地平線の角度">
+    <div class="set-row">左右（ヨー）の向き <b id="yaw-val">0°</b></div>
+    <input type="range" id="yaw" min="-30" max="30" step="1" value="0" aria-label="左右の向き">
     <button id="settings-done" class="big-btn">閉じる</button>
   </div>
 

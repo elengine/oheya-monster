@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { startCamAR } from './camAR';
 import { SPECIES } from './models';
 import { unlock, sfx, isMuted, setMuted, startBGM, stopBGM } from './audio';
-import { setHorizonOffset } from './gyro';
+import { setHorizonOffset, setYawOffset } from './gyro';
 import { loadDex, totalCount } from './dex';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -147,6 +147,11 @@ function wire(): void {
   $<HTMLButtonElement>('settings-btn').addEventListener('click', () => { unlock(); sfx('tap'); settings.classList.remove('hidden'); });
   horizon.addEventListener('input', () => { const v = parseInt(horizon.value, 10) || 0; setHorizonOffset(v); horizonVal.textContent = v + '°'; localStorage.setItem('oheya:horizon', String(v)); });
   $<HTMLButtonElement>('settings-done').addEventListener('click', () => { sfx('tap'); settings.classList.add('hidden'); });
+  const yaw = $<HTMLInputElement>('yaw');
+  const yawVal = $('yaw-val');
+  const yawSaved = localStorage.getItem('oheya:yaw');
+  if (yawSaved != null) { const v = parseInt(yawSaved, 10) || 0; setYawOffset(v); yaw.value = String(v); yawVal.textContent = v + '°'; }
+  yaw.addEventListener('input', () => { const v = parseInt(yaw.value, 10) || 0; setYawOffset(v); yawVal.textContent = v + '°'; localStorage.setItem('oheya:yaw', String(v)); });
   soundBtn.addEventListener('click', () => { setMuted(!isMuted()); refreshSoundBtn(); sfx('tap'); });
   $<HTMLButtonElement>('dex-btn').addEventListener('click', () => { sfx('dex'); renderDex(); dex.classList.remove('hidden'); });
   $<HTMLButtonElement>('dex-close').addEventListener('click', () => { sfx('tap'); dex.classList.add('hidden'); });
