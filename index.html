@@ -49,6 +49,8 @@
     .status-tip.bad { color: #ffc0b8; border-color: rgba(255,90,80,.78); background: linear-gradient(135deg,rgba(70,12,22,.65),rgba(130,30,22,.65)); box-shadow: 0 0 26px rgba(255,80,70,.55); text-shadow: 0 0 12px rgba(255,120,90,.85),0 1px 2px #000; }
     @keyframes bannerPop { 0% { transform: translateX(-50%) scale(.5); opacity: 0 } 100% { transform: translateX(-50%) scale(1); opacity: 1 } }
     @media (max-width: 600px) { .status-tip { font-size: 20px; } .hud .chip { font-size: 18px; padding: 8px 14px; } }
+    .set-row { font-size: 18px; margin: 18px 0 6px; }
+    input#horizon { width: min(70vw, 320px); accent-color: #7cf0ff; }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -64,7 +66,17 @@
     <div class="desc">
     </div>
     <button id="start-ar" class="big-btn">スタート</button>
+    <button id="settings-btn" class="big-btn secondary">設定</button>
     <div id="ar-error" class="ar-err hidden"></div>
+  </div>
+
+  <!-- 設定画面 -->
+  <div id="settings" class="title hidden">
+    <h1>設定</h1>
+    <div class="ver">地平線の角度の微調整</div>
+    <div class="set-row">地平線 <b id="horizon-val">0°</b></div>
+    <input type="range" id="horizon" min="-30" max="30" step="1" value="0" aria-label="地平線の角度">
+    <button id="settings-done" class="big-btn">閉じる</button>
   </div>
 
   <!-- AR/遊戯中 HUD -->

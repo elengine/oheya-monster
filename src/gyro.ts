@@ -14,6 +14,11 @@ export type GyroHandle = {
 const deg = (v: number | null) => THREE.MathUtils.degToRad(v ?? 0);
 const Z = new THREE.Vector3(0, 0, 1);
 
+// 地平線の角度補正（度）。実空間とのズレをスライダーで調整（設定画面で変更・localStorage保存）
+let horizonOffset = 0;
+export function setHorizonOffset(deg: number): void { horizonOffset = THREE.MathUtils.degToRad(deg); }
+export function getHorizonOffset(): number { return THREE.MathUtils.radToDeg(horizonOffset); }
+
 // iOS/iPadOS: モーション許可ポップアップは「タップ直後」に呼ぶと安定して出る。
 // iOS13+は設定トグル廃止のため、この requestPermission が正規ルート。
 export async function requestGyroPermission(): Promise<boolean> {
@@ -59,7 +64,7 @@ export async function startGyro(baseQ: THREE.Quaternion): Promise<GyroHandle> {
     // 地平線を水平に保ち、モンスター/ボールが横倒しで視界から消えない
     const _e = new THREE.Euler().setFromQuaternion(handle.q, 'YXZ');
     // ピッチ(仰ぎ)を反転: 端末を奥に倒すと3D床の奥側がせり上がり実空間の平面と一致する
-    handle.q.setFromEuler(new THREE.Euler(-_e.x, _e.y + Math.PI, 0, 'YXZ'));
+    handle.q.setFromEuler(new THREE.Euler(-_e.x + horizonOffset, _e.y + Math.PI, 0, 'YXZ'));
     handle.live = () => ({ alpha: e.alpha, beta: e.beta, gamma: e.gamma });
     handle.active = true;
   };
