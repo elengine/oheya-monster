@@ -12,6 +12,8 @@ export type FieldCallbacks = {
   onCatch: () => void;
 };
 
+type MotionKind = 'breathe' | 'stretch' | 'hop' | 'fly';
+
 type MonsterRef = {
   root: THREE.Group;
   ring: THREE.Mesh;
@@ -20,6 +22,9 @@ type MonsterRef = {
   ringR: number;
   species: Species;
   floorY: number;
+  floorX: number;
+  motion: MotionKind;
+  m0: THREE.Vector3;
   state: 'idle' | 'targeted' | 'fleeing';
   age: number;
   fleeAt: number;
@@ -27,7 +32,7 @@ type MonsterRef = {
 
 type Ball = { mesh: THREE.Group; t: number; from: THREE.Vector3; mid: THREE.Vector3; to: THREE.Vector3 };
 
-const MAX_MONSTERS = 3;
+const MAX_MONSTERS = 5;
 const BASE_RATE: Record<number, number> = { 1: 0.68, 2: 0.55, 3: 0.40 };
 const HAND_DEPTH = 1.7; // 手前のボールを置く奥行(画面下へ常時投影)
 
@@ -129,7 +134,9 @@ export class GameField {
 
     const ref: MonsterRef = {
       root: group, ring, ringPhase: Math.random() * Math.PI * 2,
-      ringBase, ringR: 0.5, species, floorY: pos.y, state: 'idle', age: 0, fleeAt: 0,
+      ringBase, ringR: 0.5, species, floorY: pos.y, floorX: pos.x,
+      motion: (['breathe', 'stretch', 'hop', 'fly'] as MotionKind[])[Math.floor(Math.random() * 4)],
+      m0: group.scale.clone(), state: 'idle', age: 0, fleeAt: 0,
     };
     group.userData.monsterRef = ref;
     group.traverse((o) => { o.userData.monsterRef = ref; });
@@ -141,7 +148,9 @@ export class GameField {
   }
 
   activeCount(): number { return this.monsters.length; }
-  maxCount(): number { return MAX_MONSTERS; }
+  private maxN = MAX_MONSTERS;
+  setMax(n: number): void { this.maxN = Math.max(1, Math.min(10, Math.round(n))); }
+  maxCount(): number { return this.maxN; }
 
   /** モンスターの画面座標（QA/ターゲット選択用） */
   projectToScreen(ref: MonsterRef): { x: number; y: number } {
@@ -291,11 +300,29 @@ export class GameField {
 
   private updateMonster(ref: MonsterRef, dt: number): void {
     ref.age += dt;
-    const phase = (ref.root.userData.bobPhase as number) ?? 0;
-    const amp = (ref.root.userData.bobAmp as number) ?? 0.03;
-    ref.root.position.y = ref.floorY + Math.sin(ref.age * 3 + phase) * amp;
-
-    // 判定リングのズームイン・アウト（正面でサイズ/色が変わる）
+    ref.root.position.x = ref.floorX;
+    const t = ref.age;
+    const ph = ref.ringPhase;
+    const m0 = ref.m0;
+    let y = ref.floorY;
+    let sc = m0.clone();
+    switch (ref.motion) {
+      case 'breathe':   // サイズがふくらんだり縮んだり
+        sc = m0.clone().multiplyScalar(1 + Math.sin(t * 4 + ph) * 0.13); break;
+      case 'stretch': { // 縦に伸び縮み(伸びると幅は細る)
+        const p = Math.sin(t * 5 + ph);
+        sc.set(m0.x * (1 + 0.13 * p), m0.y * (1 - 0.24 * p), m0.z * (1 + 0.13 * p));
+        break; }
+      case 'hop':      // 左右に飛び跳ねる(上下+横)
+        ref.root.position.x = ref.floorX + Math.sin(t * 2.2 + ph) * 0.28;
+        y = ref.floorY + Math.abs(Math.sin(t * 6 + ph)) * m0.y * 0.95;
+        break;
+      case 'fly':      // 飛んでいる(浮いてふわふわ)
+        y = ref.floorY + m0.y * 2.4 + Math.sin(t * 3 + ph) * m0.y * 0.3;
+        break;
+    }
+    ref.root.position.y = y;
+    ref.root.scale.copy(sc);
     const s = 0.5 - 0.5 * Math.cos(ref.age * 2.6 + ref.ringPhase);
     ref.ringR = 0.1 + s * 0.75;
     ref.ring.scale.setScalar(ref.ringBase * (0.25 + s * 1.1));

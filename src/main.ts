@@ -82,6 +82,7 @@ async function onStartCam(): Promise<void> {
   unlock();
   sfx('tap');
   const f = makeField();
+  f.setMax(parseInt(localStorage.getItem('oheya:max') || '5', 10) || 5);
   showError('');
   try {
     title.classList.add('hidden');
@@ -143,15 +144,23 @@ function wire(): void {
   const horizon = $<HTMLInputElement>('horizon');
   const horizonVal = $('horizon-val');
   const saved = localStorage.getItem('oheya:horizon');
-  if (saved != null) { const v = parseInt(saved, 10) || 0; setHorizonOffset(v); horizon.value = String(v); horizonVal.textContent = v + '°'; }
+  const hVal = saved != null ? (parseInt(saved, 10) || 25) : 25;
+  setHorizonOffset(hVal); horizon.value = String(hVal); horizonVal.textContent = hVal + '°';
+  horizon.addEventListener('input', () => { const v = parseInt(horizon.value, 10) || 25; setHorizonOffset(v); horizonVal.textContent = v + '°'; localStorage.setItem('oheya:horizon', String(v)); });
   $<HTMLButtonElement>('settings-btn').addEventListener('click', () => { unlock(); sfx('tap'); settings.classList.remove('hidden'); });
-  horizon.addEventListener('input', () => { const v = parseInt(horizon.value, 10) || 0; setHorizonOffset(v); horizonVal.textContent = v + '°'; localStorage.setItem('oheya:horizon', String(v)); });
   $<HTMLButtonElement>('settings-done').addEventListener('click', () => { sfx('tap'); settings.classList.add('hidden'); });
   const yaw = $<HTMLInputElement>('yaw');
   const yawVal = $('yaw-val');
   const yawSaved = localStorage.getItem('oheya:yaw');
-  if (yawSaved != null) { const v = parseInt(yawSaved, 10) || 0; setYawOffset(v); yaw.value = String(v); yawVal.textContent = v + '°'; }
+  const yV = yawSaved != null ? (parseInt(yawSaved, 10) || 0) : 0;
+  setYawOffset(yV); yaw.value = String(yV); yawVal.textContent = yV + '°';
   yaw.addEventListener('input', () => { const v = parseInt(yaw.value, 10) || 0; setYawOffset(v); yawVal.textContent = v + '°'; localStorage.setItem('oheya:yaw', String(v)); });
+  const maxmons = $<HTMLInputElement>('maxmons');
+  const maxVal = $('max-val');
+  const mSaved = localStorage.getItem('oheya:max');
+  const mv = mSaved != null ? (parseInt(mSaved, 10) || 5) : 5;
+  maxmons.value = String(mv); maxVal.textContent = String(mv); if (field) field.setMax(mv);
+  maxmons.addEventListener('input', () => { const v = parseInt(maxmons.value, 10) || 5; if (field) field.setMax(v); maxVal.textContent = String(v); localStorage.setItem('oheya:max', String(v)); });
   soundBtn.addEventListener('click', () => { setMuted(!isMuted()); refreshSoundBtn(); sfx('tap'); });
   $<HTMLButtonElement>('dex-btn').addEventListener('click', () => { sfx('dex'); renderDex(); dex.classList.remove('hidden'); });
   $<HTMLButtonElement>('dex-close').addEventListener('click', () => { sfx('tap'); dex.classList.add('hidden'); });

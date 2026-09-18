@@ -51,9 +51,10 @@ export async function startCamAR(
 
   const gyro = await startGyro(baseQ);
 
-  field.spawnAt(new THREE.Vector3(-0.6, 0, 0.2), tierRoll(Math.random));
-  field.spawnAt(new THREE.Vector3(0.6, 0, 0.0), tierRoll(Math.random));
-  field.spawnAt(new THREE.Vector3(0.0, 0, -0.3), tierRoll(Math.random));
+  field.spawnAt(new THREE.Vector3(-0.9, 0, Math.random() * 0.7 - 0.3), tierRoll(Math.random));
+  field.spawnAt(new THREE.Vector3(0.9, 0, Math.random() * 0.7 - 0.7), tierRoll(Math.random));
+  field.spawnAt(new THREE.Vector3(Math.random() * 0.5 - 0.25, 0, -1.2), tierRoll(Math.random));
+  field.spawnAt(new THREE.Vector3(Math.random() * 0.7 - 0.35, 0, 0.75), tierRoll(Math.random));
 
   loadMonsterModels().then((m) => { if (m.length) field.setModelPool(m); });
 
@@ -64,8 +65,8 @@ export async function startCamAR(
     prev = now;
     cooldown -= dt;
     if (cooldown <= 0 && field.activeCount() < field.maxCount()) {
-      const x = (Math.random() - 0.5) * 2.4;
-      const z = Math.random() * 0.9 - 0.5;
+      const x = (Math.random() - 0.5) * 2.2;
+      const z = Math.random() * 2.4 - 1.5; // 近い(手前)〜遠い(奥)まで様々な距離感で出現
       field.spawnAt(new THREE.Vector3(x, 0, z), tierRoll(Math.random));
       cooldown = 4 + Math.random() * 4;
     }
