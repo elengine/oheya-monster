@@ -43,6 +43,7 @@ export async function startGyro(baseQ: THREE.Quaternion): Promise<GyroHandle> {
   const euler = new THREE.Euler();
   const qAbs = new THREE.Quaternion();
   const orientQ = new THREE.Quaternion(); // 画面向き(縦=0)オフセット
+  const z90Q = new THREE.Quaternion().setFromAxisAngle(Z, -Math.PI / 2); // three.js標準の座標系変換
   let firstInv: THREE.Quaternion | null = null;
 
   const onRot = (e: DeviceOrientationEvent) => {
@@ -54,6 +55,7 @@ export async function startGyro(baseQ: THREE.Quaternion): Promise<GyroHandle> {
     qAbs.setFromEuler(euler);
     orientQ.setFromAxisAngle(Z, -deg(angle));
     qAbs.multiply(orientQ);
+    qAbs.multiply(z90Q); // 端末座標→3D座標の標準変換（仰ぎ=地平線, 右/左=回転方向が一致する）
 
     if (!firstInv) firstInv = qAbs.clone().invert();
     const delta = new THREE.Quaternion().multiplyQuaternions(qAbs, firstInv);
