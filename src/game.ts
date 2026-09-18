@@ -308,7 +308,7 @@ export class GameField {
 
   private updateMonster(ref: MonsterRef, dt: number): void {
     ref.age += dt;
-    ref.root.position.x = ref.floorX;
+    if (ref.state !== 'fleeing') ref.root.position.x = ref.floorX;
     const t = ref.age;
     const ph = ref.ringPhase;
     const m0 = ref.m0;
@@ -338,12 +338,12 @@ export class GameField {
     c.color.setHSL((1 - s) * 0.33, 0.9, 0.55);
 
     if (ref.state === 'fleeing') {
-      // 逃げた = 左か右に軽く跳ねながらフレームアウト
-      ref.root.rotation.y += dt * 10;
-      ref.root.position.x += ref.fleeDir * dt * 2.0;   // 左右へフレームアウト
-      ref.root.position.y = ref.floorY + Math.abs(Math.sin(ref.age * 14 + ref.ringPhase)) * ref.m0.y * 0.5; // 軽く跳ねる
-      ref.root.scale.multiplyScalar(1 - dt * 1.5);
-      if (ref.root.scale.x < 0.06) this.removeMonster(ref);
+      // 逃げた = 左か右に飛び跳ねながら即座にフレームアウトして消える
+      ref.root.rotation.y += dt * 8;
+      ref.root.position.x += ref.fleeDir * dt * 3.2;   // 左右へ素早く移動
+      ref.root.position.y = ref.floorY + Math.abs(Math.sin(ref.age * 13 + ref.ringPhase)) * ref.m0.y * 0.5; // 飛び跳ねる
+      ref.root.scale.multiplyScalar(1 - dt * 2.4);     // 素早く縮む
+      if (ref.root.scale.x < 0.2) this.removeMonster(ref);
     }
   }
 
