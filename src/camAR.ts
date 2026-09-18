@@ -16,6 +16,7 @@ export async function startCamAR(
   // タップ直後(カメラ許可より先)にジャイロ許可を要求 → iOS/iPadOS26でポップアップが出る
   await requestGyroPermission();
 
+  let videoTex: THREE.VideoTexture | null = null;
   let stream: MediaStream | null = null;
   if (navigator.mediaDevices?.getUserMedia) {
     try {
@@ -25,6 +26,14 @@ export async function startCamAR(
       });
       video.srcObject = stream;
       await video.play().catch(() => { /* 次フレームで再生 */ });
+      // カメラ映像をDOMの<video>として重ねず、3Dシーンの背景(VideoTexture)に取り込む。
+      // → Androidのメディアオーバーレイ(z-index無視で最前面に来る)問題を構造的に回避
+      if (stream.getVideoTracks()[0]?.readyState === 'live' && video.videoWidth > 0) {
+        videoTex = new THREE.VideoTexture(video);
+        videoTex.colorSpace = THREE.SRGBColorSpace;
+        field.scene.background = videoTex;
+        video.style.display = 'none'; // DOMからの独立レイヤ合成をやめる
+      }
     } catch (e) {
       console.warn('[oheya] カメラ起動失敗（映像なしで実行）:', e);
     }
@@ -87,6 +96,8 @@ export async function startCamAR(
     gyro.stop();
     if (stream) for (const t of stream.getTracks()) t.stop();
     video.srcObject = null;
+    if (videoTex) { videoTex.dispose(); if (field.scene.background === videoTex) field.scene.background = null; }
+    video.style.display = '';
     onEnd();
   };
 }
