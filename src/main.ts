@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { startCamAR } from './camAR';
 import { SPECIES } from './models';
 import { unlock, sfx, isMuted, setMuted, startBGM, stopBGM } from './audio';
-import { setHorizonOffset, setYawOffset } from './gyro';
+import { setHorizonOffset } from './gyro';
 import { loadDex, totalCount } from './dex';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -150,12 +150,9 @@ function wire(): void {
   horizon.addEventListener('input', () => { const v = parseInt(horizon.value, 10) || 25; setHorizonOffset(v); horizonVal.textContent = v + '°'; localStorage.setItem('oheya:horizon', String(v)); });
   $<HTMLButtonElement>('settings-btn').addEventListener('click', () => { unlock(); sfx('tap'); settings.classList.remove('hidden'); });
   $<HTMLButtonElement>('settings-done').addEventListener('click', () => { sfx('tap'); settings.classList.add('hidden'); });
-  const yaw = $<HTMLInputElement>('yaw');
-  const yawVal = $('yaw-val');
-  const yawSaved = localStorage.getItem('oheya:yaw');
-  const yV = yawSaved != null ? (parseInt(yawSaved, 10) || 0) : 0;
-  setYawOffset(yV); yaw.value = String(yV); yawVal.textContent = yV + '°';
-  yaw.addEventListener('input', () => { const v = parseInt(yaw.value, 10) || 0; setYawOffset(v); yawVal.textContent = v + '°'; localStorage.setItem('oheya:yaw', String(v)); });
+  const gridEl = $<HTMLInputElement>('grid');
+  gridEl.checked = localStorage.getItem('oheya:grid') !== '0';
+  gridEl.addEventListener('change', () => { localStorage.setItem('oheya:grid', gridEl.checked ? '1' : '0'); });
   const maxmons = $<HTMLInputElement>('maxmons');
   const maxVal = $('max-val');
   const mSaved = localStorage.getItem('oheya:max');

@@ -37,6 +37,7 @@ export async function startCamAR(
   (grid.material as THREE.Material).transparent = true;
   (grid.material as THREE.Material).opacity = 0.5;
   grid.position.y = 0.02;
+  grid.visible = localStorage.getItem('oheya:grid') !== '0';
   field.scene.add(grid);
 
   // 初期カメラ構図 → ジャイロでこの初期姿勢 × デバイス回転
@@ -71,13 +72,8 @@ export async function startCamAR(
       field.spawnAt(new THREE.Vector3(x, 0, z), tierRoll(Math.random));
       cooldown = 4 + Math.random() * 4;
     }
-    // ジャイロ受信状態を表示
-    const gs = document.getElementById('gyro-stat');
-    if (gs) {
-      gs.textContent = gyro.active ? 'ジャイロ:連動OK' : 'ジャイロ:待機…';
-      gs.style.borderColor = gyro.active ? 'rgba(120,240,255,.6)' : 'rgba(255,120,100,.5)';
-    }
     if (gyro.active) cam.quaternion.copy(gyro.q);
+    // 手前のボール: 投げた直後は空 → 少し経ってから
     field.update(dt);
     field.renderer.render(field.scene, cam);
   });
