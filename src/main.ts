@@ -88,6 +88,11 @@ async function onStartCam(): Promise<void> {
   try {
     title.classList.add('hidden');
     hud.classList.remove('hidden');
+    hud.style.display = 'flex'; // Android: クラス付替えで表示されない場合に直接保証
+    for (const id of ['catch-counter', 'sound-btn', 'dex-btn', 'exit-btn']) {
+      const el = document.getElementById(id);
+      if (el) { el.style.display = id === 'catch-counter' ? 'block' : 'flex'; el.style.visibility = 'visible'; el.style.transform = 'translateZ(0)'; }
+    }
     startBGM();
     cancelCam = await startCamAR(f, camVideo, () => showTitle());
   } catch (e) {

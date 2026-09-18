@@ -27,7 +27,8 @@
       border-radius: 12px; padding: 10px 16px; max-width: 420px; line-height: 1.6; white-space: pre-line; }
     .note { font-size: 12px; opacity: .6; }
     .hud { position: fixed; inset: 0; padding: calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 10px);
-      display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; z-index: 10; }
+      display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; z-index: 50;
+      transform: translateZ(0); will-change: transform; /* Android: video/canvas上部のfixed要素は独自レイヤがないと描画されないことがある */ }
     .hud .top, .hud .bottom { display: flex; justify-content: space-between; align-items: center; }
     .hud .chip { pointer-events: auto; background: linear-gradient(135deg,#241a54,#4a2f8f); border: 1px solid rgba(255,215,120,.65);
       border-radius: 16px; padding: 10px 18px; font-size: 22px; font-weight: 800; color: #ffe9a8; letter-spacing: .5px;
@@ -37,7 +38,7 @@
       box-shadow: 0 3px 12px rgba(0,0,0,.45), 0 0 18px rgba(120,240,255,.4); }
     #sound-btn { background: radial-gradient(circle at 35% 30%, #35c8d6, #1e6bd1); }
     #exit-btn { background: radial-gradient(circle at 35% 30%, #ff8a7a, #c0284a); font-size: 30px; }
-    .status-tip { position: fixed; left: 50%; top: 12%; transform: translateX(-50%); display: none; pointer-events: none;
+    .status-tip { position: fixed; left: 50%; top: 12%; transform: translateX(-50%) translateZ(0); display: none; pointer-events: none;
       text-align: center; font-size: 26px; font-weight: 900; letter-spacing: 1px; line-height: 1.4;
       color: #fff; text-shadow: 0 0 14px rgba(120,240,255,.85), 0 1px 3px #000;
       padding: 12px 28px; border-radius: 18px; max-width: 86%;
