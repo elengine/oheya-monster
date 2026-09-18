@@ -24,10 +24,11 @@ let field: GameField | null = null;
 let cancelCam: (() => void) | null = null;
 let statusTimer: number | null = null;
 
-function showStatus(msg: string): void {
+function showStatus(msg: string, bad = false): void {
   if (statusTimer) { clearTimeout(statusTimer); statusTimer = null; }
-  if (!msg) { statusTip.classList.remove('show'); statusTip.textContent = ''; return; }
+  if (!msg) { statusTip.classList.remove('show', 'bad'); statusTip.textContent = ''; return; }
   statusTip.textContent = msg;
+  statusTip.classList.toggle('bad', bad);
   statusTip.classList.remove('show');
   void statusTip.offsetWidth; // rAF/reflowで再アニメーション
   statusTip.classList.add('show');
@@ -45,7 +46,7 @@ function refreshSoundBtn(): void {
 function makeField(): GameField {
   if (field) return field;
   const f = new GameField(app, {
-    setStatus: (msg) => showStatus(msg),
+    setStatus: (msg, bad) => showStatus(msg, bad),
     onCatch: () => refreshCount(),
   });
   field = f;

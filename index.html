@@ -46,6 +46,7 @@
       box-shadow: 0 0 28px rgba(120,240,255,.45), inset 0 0 18px rgba(150,120,255,.18);
       backdrop-filter: blur(4px); z-index: 12; }
     .status-tip.show { display: block; animation: bannerPop .35s ease; }
+    .status-tip.bad { color: #ffc0b8; border-color: rgba(255,90,80,.78); background: linear-gradient(135deg,rgba(70,12,22,.65),rgba(130,30,22,.65)); box-shadow: 0 0 26px rgba(255,80,70,.55); text-shadow: 0 0 12px rgba(255,120,90,.85),0 1px 2px #000; }
     @keyframes bannerPop { 0% { transform: translateX(-50%) scale(.5); opacity: 0 } 100% { transform: translateX(-50%) scale(1); opacity: 1 } }
     @media (max-width: 600px) { .status-tip { font-size: 20px; } .hud .chip { font-size: 18px; padding: 8px 14px; } }
     .hidden { display: none !important; }

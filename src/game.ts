@@ -8,7 +8,7 @@ import { sfx } from './audio';
 import { addCatch } from './dex';
 
 export type FieldCallbacks = {
-  setStatus: (msg: string) => void;
+  setStatus: (msg: string, bad?: boolean) => void;
   onCatch: () => void;
 };
 
@@ -278,7 +278,7 @@ export class GameField {
     } else {
       ref.state = 'fleeing';
       ref.fleeAt = ref.age;
-      this.cb.setStatus(`${ref.species.name} は にげてしまった…`);
+      this.cb.setStatus(`${ref.species.name} は にげてしまった…`, true);
       sfx('flee');
     }
     this.throwing = false;
@@ -303,15 +303,13 @@ export class GameField {
     c.color.setHSL((1 - s) * 0.33, 0.9, 0.55);
 
     if (ref.state === 'fleeing') {
-      // 逃げた = 手前へ飛び出してバタバタしながら転がり消える（ズームアウト→逃出演出）
-      const k = Math.max(0, Math.min(1, (ref.age - ref.fleeAt) / 0.7)); // 逃げ始めからの進度
-      ref.root.rotation.y += dt * 16;
-      ref.root.rotation.z += dt * 6;            // 傾いて転がる
-      ref.root.position.z += dt * 1.8;         // カメラ方向（手前）へ飛び出して逃げる
-      ref.root.position.y += Math.sin(ref.age * 24) * dt * 1.4; // バタバタ
-      const inv = 1 - dt * 1.6;
-      ref.root.scale.multiplyScalar(Math.max(inv, 0.35 - k * 0.3));
-      if (k >= 1 || ref.root.scale.x < 0.05) this.removeMonster(ref);
+      // 逃げた = 上方向へふわっと舞い上がって回りながら消える
+      ref.root.rotation.y += dt * 12;
+      ref.root.rotation.z += dt * 4;
+      ref.root.position.y += dt * 2.4;        // 真上に逃げる
+      ref.root.position.z -= dt * 0.4;
+      ref.root.scale.multiplyScalar(1 - dt * 1.8);
+      if (ref.root.scale.x < 0.06) this.removeMonster(ref);
     }
   }
 

@@ -42,24 +42,19 @@ export async function startGyro(baseQ: THREE.Quaternion): Promise<GyroHandle> {
 
   const euler = new THREE.Euler();
   const qAbs = new THREE.Quaternion();
-  const orientQ = new THREE.Quaternion(); // 画面向き(縦=0)オフセット
-  const z90Q = new THREE.Quaternion().setFromAxisAngle(Z, -Math.PI / 2); // three.js標準の座標系変換
-  let firstInv: THREE.Quaternion | null = null;
+  const z90Q = new THREE.Quaternion().setFromAxisAngle(Z, -Math.PI / 2); // 端末→3D座標変換
+  const q1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5)); // three.js標準の結合成分
 
+  // FPS視点: カメラ姿勢 = 端末の向き(絶対)。左右は視点が回り世界は回らず、仰ぎで地平線が動く
   const onRot = (e: DeviceOrientationEvent) => {
     if (e.alpha == null || e.beta == null || e.gamma == null) return;
-    // iOS: alpha=Z方位, beta=X前後, gamma=Y左右 → three.js標準: euler(β, γ, -α, 'YXZ')
-    euler.set(deg(e.beta), deg(e.gamma), -deg(e.alpha), 'YXZ');
-    // 画面の向き（縦向き=0）を補正
     const angle = ((screen as unknown as { orientation?: { angle?: number } })?.orientation?.angle ?? 0) % 360;
+    euler.set(deg(e.beta), deg(e.gamma), -deg(e.alpha), 'YXZ');
     qAbs.setFromEuler(euler);
-    orientQ.setFromAxisAngle(Z, -deg(angle));
-    qAbs.multiply(orientQ);
-    qAbs.multiply(z90Q); // 端末座標→3D座標の標準変換（仰ぎ=地平線, 右/左=回転方向が一致する）
-
-    if (!firstInv) firstInv = qAbs.clone().invert();
-    const delta = new THREE.Quaternion().multiplyQuaternions(qAbs, firstInv);
-    handle.q.copy(baseQ).multiply(delta);
+    const qz = new THREE.Quaternion().setFromAxisAngle(Z, -deg(angle));
+    qAbs.multiply(qz);
+    qAbs.multiply(z90Q).multiply(q1);
+    handle.q.copy(baseQ).multiply(qAbs);
     handle.live = () => ({ alpha: e.alpha, beta: e.beta, gamma: e.gamma });
     handle.active = true;
   };
