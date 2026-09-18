@@ -161,6 +161,12 @@ function wire(): void {
   const mv = mSaved != null ? (parseInt(mSaved, 10) || 5) : 5;
   maxmons.value = String(mv); maxVal.textContent = String(mv); if (field) field.setMax(mv);
   maxmons.addEventListener('input', () => { const v = parseInt(maxmons.value, 10) || 5; if (field) field.setMax(v); maxVal.textContent = String(v); localStorage.setItem('oheya:max', String(v)); });
+  const depth = $<HTMLInputElement>('depth');
+  const depthVal = $('depth-val');
+  const dSaved = localStorage.getItem('oheya:depth');
+  const dv = dSaved != null ? dSaved : '3';
+  depth.value = dv; depthVal.textContent = dv;
+  depth.addEventListener('input', () => { depthVal.textContent = depth.value; localStorage.setItem('oheya:depth', depth.value); });
   soundBtn.addEventListener('click', () => { setMuted(!isMuted()); refreshSoundBtn(); sfx('tap'); });
   $<HTMLButtonElement>('dex-btn').addEventListener('click', () => { sfx('dex'); renderDex(); dex.classList.remove('hidden'); });
   $<HTMLButtonElement>('dex-close').addEventListener('click', () => { sfx('tap'); dex.classList.add('hidden'); });

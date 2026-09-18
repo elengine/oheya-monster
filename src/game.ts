@@ -25,6 +25,7 @@ type MonsterRef = {
   floorX: number;
   motion: MotionKind;
   m0: THREE.Vector3;
+  fleeDir: number;
   state: 'idle' | 'targeted' | 'fleeing';
   age: number;
   fleeAt: number;
@@ -136,7 +137,7 @@ export class GameField {
       root: group, ring, ringPhase: Math.random() * Math.PI * 2,
       ringBase, ringR: 0.5, species, floorY: pos.y, floorX: pos.x,
       motion: (['breathe', 'stretch', 'hop', 'fly'] as MotionKind[])[Math.floor(Math.random() * 4)],
-      m0: group.scale.clone(), state: 'idle', age: 0, fleeAt: 0,
+      m0: group.scale.clone(), fleeDir: Math.random() < 0.5 ? -1 : 1, state: 'idle', age: 0, fleeAt: 0,
     };
     group.userData.monsterRef = ref;
     group.traverse((o) => { o.userData.monsterRef = ref; });
@@ -330,12 +331,11 @@ export class GameField {
     c.color.setHSL((1 - s) * 0.33, 0.9, 0.55);
 
     if (ref.state === 'fleeing') {
-      // 逃げた = 上方向へふわっと舞い上がって回りながら消える
-      ref.root.rotation.y += dt * 12;
-      ref.root.rotation.z += dt * 4;
-      ref.root.position.y += dt * 2.4;        // 真上に逃げる
-      ref.root.position.z -= dt * 0.4;
-      ref.root.scale.multiplyScalar(1 - dt * 1.8);
+      // 逃げた = 左か右に軽く跳ねながらフレームアウト
+      ref.root.rotation.y += dt * 10;
+      ref.root.position.x += ref.fleeDir * dt * 2.0;   // 左右へフレームアウト
+      ref.root.position.y = ref.floorY + Math.abs(Math.sin(ref.age * 14 + ref.ringPhase)) * ref.m0.y * 0.5; // 軽く跳ねる
+      ref.root.scale.multiplyScalar(1 - dt * 1.5);
       if (ref.root.scale.x < 0.06) this.removeMonster(ref);
     }
   }
