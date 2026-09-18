@@ -61,10 +61,17 @@ export async function startCamAR(
     prev = now;
     cooldown -= dt;
     if (cooldown <= 0 && field.activeCount() < field.maxCount()) {
-      field.spawnAt(new THREE.Vector3((Math.random() - 0.5) * 2.4, 0, Math.random() * 0.9 - 0.5), tierRoll(Math.random));
+      const x = (Math.random() - 0.5) * 2.4;
+      const z = Math.random() * 0.9 - 0.5;
+      field.spawnAt(new THREE.Vector3(x, 0, z), tierRoll(Math.random));
       cooldown = 4 + Math.random() * 4;
     }
-    // ジャイロでカメラ姿勢を更新（実空間固定）
+    // ジャイロ受信状態を表示
+    const gs = document.getElementById('gyro-stat');
+    if (gs) {
+      gs.textContent = gyro.active ? 'ジャイロ:連動OK' : 'ジャイロ:待機…';
+      gs.style.borderColor = gyro.active ? 'rgba(120,240,255,.6)' : 'rgba(255,120,100,.5)';
+    }
     if (gyro.active) cam.quaternion.copy(gyro.q);
     field.update(dt);
     field.renderer.render(field.scene, cam);

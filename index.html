@@ -72,7 +72,10 @@
   <!-- AR/遊戯中 HUD -->
   <div id="hud" class="hud hidden">
     <div class="top">
-      <div class="chip" id="catch-counter">つかまえた: 0</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="chip" id="catch-counter">つかまえた: 0</div>
+        <div class="chip" id="gyro-stat" style="font-size:14px;padding:6px 10px;box-shadow:none">ジャイロ…</div>
+      </div>
       <button id="sound-btn" class="icon-btn">♪</button>
     </div>
     <div class="status-tip" id="status-tip">まわりを映して ゆかにモンスターをさがそう</div>
